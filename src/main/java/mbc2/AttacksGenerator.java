@@ -1,5 +1,9 @@
 package mbc2;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 public class AttacksGenerator {
     public static long generatePawnAttacks(char colour, int square) {
         long attacks = 0L;
@@ -99,6 +103,40 @@ public class AttacksGenerator {
         for (int file = targetFile + 1; file < 7; file++) {
             attacks |= (1L << (targetRank * 8 + file));
         }
+        return attacks;
+    }
+
+    public static long generateBishopAttacks(int square) {
+        long attacks = 0L;
+        int targetRank = square / 8;
+        int targetFile = square % 8;
+        
+        List<Integer> leftList = IntStream.iterate(1 + targetRank, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
+        List<Integer> rightList = IntStream.iterate(1 + targetFile, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
+        List<Pair<Integer, Integer>> zipped = ZipUtility.zip(leftList, rightList);
+        for (Pair<Integer, Integer> pair : zipped) {
+            attacks |= (1L << (pair.first * 8 + pair.second));
+        }
+
+        leftList = IntStream.iterate(targetRank - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
+        zipped = ZipUtility.zip(leftList, rightList);
+        for (Pair<Integer, Integer> pair : zipped) {
+            attacks |= (1L << (pair.first * 8 + pair.second));
+        }
+
+        leftList = IntStream.iterate(1 + targetRank, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
+        rightList = IntStream.iterate(targetFile - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
+        zipped = ZipUtility.zip(leftList, rightList);
+        for (Pair<Integer, Integer> pair : zipped) {
+            attacks |= (1L << (pair.first * 8 + pair.second));
+        }
+
+        leftList = IntStream.iterate(targetRank - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
+        zipped = ZipUtility.zip(leftList, rightList);
+        for (Pair<Integer, Integer> pair : zipped) {
+            attacks |= (1L << (pair.first * 8 + pair.second));
+        }
+
         return attacks;
     }
 }

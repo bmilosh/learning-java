@@ -41,4 +41,11 @@ public class TestAttacksGenerator {
         assertEquals(4521260802403840L, AttacksGenerator.generateRookAttacks(Config.BOARDSQUARES.get("e7")));
         assertEquals(565157600297596L, AttacksGenerator.generateRookAttacks(Config.BOARDSQUARES.get("b8")));
     }
+    @Test
+    void testGenerateBishopAttacks() {
+        assertEquals(22526811443298304L, AttacksGenerator.generateBishopAttacks(Config.BOARDSQUARES.get("f1")));
+        assertEquals(275449643008L, AttacksGenerator.generateBishopAttacks(Config.BOARDSQUARES.get("d7")));
+        assertEquals(4514594912477184L, AttacksGenerator.generateBishopAttacks(Config.BOARDSQUARES.get("c4")));
+        assertEquals(18049651735527936L, AttacksGenerator.generateBishopAttacks(Config.BOARDSQUARES.get("a8")));
+    }
 }
