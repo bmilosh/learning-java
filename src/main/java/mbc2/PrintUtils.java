@@ -9,7 +9,7 @@ public class PrintUtils {
                     System.out.printf("%d   ", 8 - rank);
                 }
                 int square = rank * 8 + file;
-                long value = (BitBoard.getBitAtIndex(bitboard, square) != 0) ? 1 : 0;
+                int value = BitBoard.getBitAtIndex(bitboard, square);
                 if (file < 7) {
                     System.out.printf(" %d ", value);
                 } else {

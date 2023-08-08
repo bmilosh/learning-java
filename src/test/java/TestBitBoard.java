@@ -24,11 +24,11 @@ public class TestBitBoard {
 
     @Test
     void testGetBitAtIndex() {        
-        long position = BitBoard.getBitAtIndex(TestBitBoard.bitboard1, 52);
-        assertEquals(0L, position);
+        int position = BitBoard.getBitAtIndex(TestBitBoard.bitboard1, 52);
+        assertEquals(0, position);
 
-        long position2 = BitBoard.getBitAtIndex(TestBitBoard.bitboard1, 4);
-        assertEquals(16, position2);
+        int position2 = BitBoard.getBitAtIndex(TestBitBoard.bitboard1, 4);
+        assertEquals(1, position2);
     }
 
     @Test

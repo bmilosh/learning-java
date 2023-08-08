@@ -106,34 +106,101 @@ public class AttacksGenerator {
         return attacks;
     }
 
+    private static class BishopHelperClass{
+        long run(List<Integer> leftList, List<Integer> rightList, boolean onTheFly, long bitboard) {
+            long result = 0L;
+            List<Pair<Integer, Integer>> zipped = ZipUtility.zip(leftList, rightList);
+            for (Pair<Integer, Integer> pair : zipped) {
+                result |= (1L << (pair.first * 8 + pair.second));
+                if (onTheFly && ((1L << (pair.first * 8 + pair.second)) & bitboard) != 0) {
+                    break;
+                }
+            }
+            return result;
+        }
+    }
+    // We'll use this in the Bishop attack methods
+    private static BishopHelperClass bishopHelper = new BishopHelperClass();
+
     public static long generateBishopAttacks(int square) {
         long attacks = 0L;
         int targetRank = square / 8;
         int targetFile = square % 8;
         
-        class HelperClass{
-            long run(List<Integer> leftList, List<Integer> rightList) {
-                long result = 0L;
-                List<Pair<Integer, Integer>> zipped = ZipUtility.zip(leftList, rightList);
-                for (Pair<Integer, Integer> pair : zipped) {
-                    result |= (1L << (pair.first * 8 + pair.second));
-                }
-                return result;
-            }
-        }
-        HelperClass helper = new HelperClass();
-
         // These simulate Python's range function.
         List<Integer> leftList = IntStream.iterate(1 + targetRank, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
         List<Integer> leftListMinus = IntStream.iterate(targetRank - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
         List<Integer> rightList = IntStream.iterate(1 + targetFile, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
         List<Integer> rightListMinus = IntStream.iterate(targetFile - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
 
-        attacks |= helper.run(leftList, rightList);
-        attacks |= helper.run(leftListMinus, rightList);
-        attacks |= helper.run(leftList, rightListMinus);
-        attacks |= helper.run(leftListMinus, rightListMinus);
+        attacks |= bishopHelper.run(leftList, rightList, false, 0);
+        attacks |= bishopHelper.run(leftListMinus, rightList, false, 0);
+        attacks |= bishopHelper.run(leftList, rightListMinus, false, 0);
+        attacks |= bishopHelper.run(leftListMinus, rightListMinus, false, 0);
 
         return attacks;
+    }
+
+    public static long getRookAttacksOnTheFly(int square, long bitboard) {
+        /*
+         *  Returns a bitboard in which all the squares a rook on square "square"
+            can go to have their corresponding bit index set, taking into account blocked squares
+            defined by "bitboard".
+         */
+        long result = 0L;
+        int targetRank = square / 8;
+        int targetFile = square % 8;
+
+        for (int rank = targetRank + 1; rank <= 7; rank++) {
+            result |= (1L << (rank * 8 + targetFile));
+            if (((1L << (rank * 8 + targetFile)) & bitboard) != 0) {
+                break;
+            }
+        }
+        for (int rank = targetRank - 1; rank >= 0; rank--) {
+            result |= (1L << (rank * 8 + targetFile));
+            if (((1L << (rank * 8 + targetFile)) & bitboard) != 0) {
+                break;
+            }
+        }
+        for (int file = targetFile - 1; file >= 0; file--) {
+            result |= (1L << (targetRank * 8 + file));
+            if (((1L << (targetRank * 8 + file)) & bitboard) != 0) {
+                break;
+            }
+        }
+        for (int file = targetFile + 1; file <= 7; file++) {
+            result |= (1L << (targetRank * 8 + file));
+            if (((1L << (targetRank * 8 + file)) & bitboard) != 0) {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    public static long getBishopAttacksOnTheFly(int square, long bitboard) {
+        /*
+         *  Returns a bitboard in which all the squares a bishop on square "square"
+            can go to have their corresponding bit index set, taking into account blocked squares
+            defined by "bitboard".
+         */
+        long result = 0L;
+        int targetRank = square / 8;
+        int targetFile = square % 8;
+        List<Integer> leftList = IntStream.iterate(1 + targetRank, i -> i <= 7, i -> i + 1).boxed().collect(Collectors.toList());
+        List<Integer> leftListMinus = IntStream.iterate(targetRank - 1, i -> i >= 0, i -> i - 1).boxed().collect(Collectors.toList());
+        List<Integer> rightList = IntStream.iterate(1 + targetFile, i -> i <= 7, i -> i + 1).boxed().collect(Collectors.toList());
+        List<Integer> rightListMinus = IntStream.iterate(targetFile - 1, i -> i >= 0, i -> i - 1).boxed().collect(Collectors.toList());
+
+        result |= bishopHelper.run(leftList, rightList, true, bitboard);
+        result |= bishopHelper.run(leftListMinus, rightList, true, bitboard);
+        result |= bishopHelper.run(leftList, rightListMinus, true, bitboard);
+        result |= bishopHelper.run(leftListMinus, rightListMinus, true, bitboard);
+        return result;
+    }
+
+    public static long getQueenAttacksOnTheFly(int square, long bitboard) {
+        return getBishopAttacksOnTheFly(square, bitboard) | getRookAttacksOnTheFly(square, bitboard);
     }
 }

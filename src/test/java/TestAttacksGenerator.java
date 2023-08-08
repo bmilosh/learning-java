@@ -48,4 +48,21 @@ public class TestAttacksGenerator {
         assertEquals(4514594912477184L, AttacksGenerator.generateBishopAttacks(Config.BOARDSQUARES.get("c4")));
         assertEquals(18049651735527936L, AttacksGenerator.generateBishopAttacks(Config.BOARDSQUARES.get("a8")));
     }
+    @Test
+    void testRookAttacksOnTheFly() {
+        assertEquals(1157443718891966464L, AttacksGenerator.getRookAttacksOnTheFly(Config.BOARDSQUARES.get("e4"), 8589938688L));
+        assertEquals(33686141L, AttacksGenerator.getRookAttacksOnTheFly(Config.BOARDSQUARES.get("b8"), 34078784L));
+    }
+    @Test
+    void testBishopAttacksOnTheFly() {
+        assertEquals(9139695683588L, AttacksGenerator.getBishopAttacksOnTheFly(Config.BOARDSQUARES.get("f5"), 9070970961920L));
+        assertEquals(562949953421312L, AttacksGenerator.getBishopAttacksOnTheFly(Config.BOARDSQUARES.get("a1"), 563224831361024L));
+    }
+    @Test
+    void testQueenAttacksOnTheFly() {
+        long expected = 0b1000000010000000100100001010000011000000011111001100000000100000L;
+        long bitboard = 0b1000000000000000000100000000000000000000000001001000000000100000L;
+        assertEquals(expected, AttacksGenerator.getQueenAttacksOnTheFly(Config.BOARDSQUARES.get("h6"), bitboard));
+        assertEquals(292663135995L, AttacksGenerator.getQueenAttacksOnTheFly(Config.BOARDSQUARES.get("c8"), 1095216660480L));
+    }
 }

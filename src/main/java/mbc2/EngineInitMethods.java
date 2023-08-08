@@ -26,11 +26,24 @@ public class EngineInitMethods {
         Config.CASTLING.put('K', 8);
     }
 
+    private static void initLeaperPiecesAttacks() {
+        for (int square = 0; square < 64; square++) {
+            // Initialise Pawn Attacks
+            Config.PAWN_ATTACKS[Config.COLOURS.get('w')][square] = AttacksGenerator.generatePawnAttacks('w', square);
+            Config.PAWN_ATTACKS[Config.COLOURS.get('b')][square] = AttacksGenerator.generatePawnAttacks('b', square);
+            // Initialise Knight Attacks
+            Config.KNIGHT_ATTACKS[square] = AttacksGenerator.generateKnightAttacks(square);
+            // Initialise King Attacks
+            Config.KING_ATTACKS[square] = AttacksGenerator.generateKingAttacks(square);
+        }
+    }
+
     public static void initAll() {
         initBoardSquares();
         initPieces();
         initColours();
         initCastling();
+        initLeaperPiecesAttacks();
     }
 
 }

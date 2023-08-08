@@ -12,8 +12,8 @@ public class BitBoard {
         return bitboard | (1L << square);
     }
 
-    public static long getBitAtIndex(long bitboard, int index) {
-        return bitboard & (1L << index);
+    public static int getBitAtIndex(long bitboard, int index) {
+        return (bitboard & (1L << index)) != 0L ? 1 : 0;
     }
 
     public static long popBitAtIndex(long bitboard, int index) {
