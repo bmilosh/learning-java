@@ -24,20 +24,4 @@ public class ZipUtility {
                 .mapToObj(i -> new Pair<>(list1.get(i), list2.get(i)))
                 .collect(Collectors.toList());
     }
-
-    // // Pair class to hold the elements together
-    //  public static class Pair<T, U> {
-    //     T first;
-    //     U second;
-
-    //     Pair(T first, U second) {
-    //         this.first = first;
-    //         this.second = second;
-    //     }
-
-    //     @Override
-    //     public String toString() {
-    //         return "(" + first + ", " + second + ")";
-    //     }
-    // }
 }

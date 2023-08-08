@@ -14,7 +14,7 @@ public class Main {
         // List<String> names = Arrays.asList("Alice", "Bob", "Charlie");
         // List<Integer> ages = Arrays.asList(25, 30);
         
-        // This gives use the Java equivalent of Python's range function.
+        // This gives us the Java equivalent of Python's range function.
         List<Integer> nums2 = IntStream.iterate(8, i -> i > 3, i -> i - 1).boxed().collect(Collectors.toList());
         List<Integer> nums3 = IntStream.iterate(17, i -> i < 27, i -> i + 1).boxed().collect(Collectors.toList());
 

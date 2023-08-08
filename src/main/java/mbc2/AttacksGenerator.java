@@ -111,31 +111,28 @@ public class AttacksGenerator {
         int targetRank = square / 8;
         int targetFile = square % 8;
         
+        class HelperClass{
+            long run(List<Integer> leftList, List<Integer> rightList) {
+                long result = 0L;
+                List<Pair<Integer, Integer>> zipped = ZipUtility.zip(leftList, rightList);
+                for (Pair<Integer, Integer> pair : zipped) {
+                    result |= (1L << (pair.first * 8 + pair.second));
+                }
+                return result;
+            }
+        }
+        HelperClass helper = new HelperClass();
+
+        // These simulate Python's range function.
         List<Integer> leftList = IntStream.iterate(1 + targetRank, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
+        List<Integer> leftListMinus = IntStream.iterate(targetRank - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
         List<Integer> rightList = IntStream.iterate(1 + targetFile, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
-        List<Pair<Integer, Integer>> zipped = ZipUtility.zip(leftList, rightList);
-        for (Pair<Integer, Integer> pair : zipped) {
-            attacks |= (1L << (pair.first * 8 + pair.second));
-        }
+        List<Integer> rightListMinus = IntStream.iterate(targetFile - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
 
-        leftList = IntStream.iterate(targetRank - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
-        zipped = ZipUtility.zip(leftList, rightList);
-        for (Pair<Integer, Integer> pair : zipped) {
-            attacks |= (1L << (pair.first * 8 + pair.second));
-        }
-
-        leftList = IntStream.iterate(1 + targetRank, i -> i < 7, i -> i + 1).boxed().collect(Collectors.toList());
-        rightList = IntStream.iterate(targetFile - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
-        zipped = ZipUtility.zip(leftList, rightList);
-        for (Pair<Integer, Integer> pair : zipped) {
-            attacks |= (1L << (pair.first * 8 + pair.second));
-        }
-
-        leftList = IntStream.iterate(targetRank - 1, i -> i > 0, i -> i - 1).boxed().collect(Collectors.toList());
-        zipped = ZipUtility.zip(leftList, rightList);
-        for (Pair<Integer, Integer> pair : zipped) {
-            attacks |= (1L << (pair.first * 8 + pair.second));
-        }
+        attacks |= helper.run(leftList, rightList);
+        attacks |= helper.run(leftListMinus, rightList);
+        attacks |= helper.run(leftList, rightListMinus);
+        attacks |= helper.run(leftListMinus, rightListMinus);
 
         return attacks;
     }
