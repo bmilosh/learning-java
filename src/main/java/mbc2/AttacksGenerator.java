@@ -204,7 +204,27 @@ public class AttacksGenerator {
         return getBishopAttacksOnTheFly(square, bitboard) | getRookAttacksOnTheFly(square, bitboard);
     }
 
-    public static long getRookAttacks(int square) {
-        return -1L;
+    public static long getRookAttacks(int square, long occupancy) {
+        occupancy &= Config.ROOK_MASKS[square];
+        occupancy *= Config.ROOK_MAGIC_NUMBERS[square];
+        occupancy &= 0xFFFFFFFFFFFFFFFFL;
+        occupancy >>= 64 - Config.ROOK_RELEVANCY_OCC_COUNT[square];
+        occupancy = (int) occupancy < 0 ? 4096 + occupancy : occupancy;
+    
+        return Config.ROOK_ATTACKS[square][(int)occupancy];
+    }
+
+    public static long getBishopAttacks(int square, long occupancy) {
+        occupancy &= Config.BISHOP_MASKS[square];
+        occupancy *= Config.BISHOP_MAGIC_NUMBERS[square];
+        occupancy &= 0xFFFFFFFFFFFFFFFFL;
+        occupancy >>= 64 - Config.BISHOP_RELEVANCY_OCC_COUNT[square];
+        occupancy = (int) occupancy < 0 ? 512 + occupancy : occupancy;
+    
+        return Config.BISHOP_ATTACKS[square][(int)occupancy];
+    }
+
+    public static long getQueenAttacks(int square, long occupancy) {
+        return getBishopAttacks(square, occupancy) | getRookAttacks(square, occupancy);
     }
 }
