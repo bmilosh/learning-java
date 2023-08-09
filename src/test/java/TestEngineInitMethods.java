@@ -3,8 +3,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import mbc2.AttacksGenerator;
 import mbc2.Config;
 import mbc2.EngineInitMethods;
+import mbc2.OccupancySetter;
 
 public class TestEngineInitMethods {
     @BeforeAll
@@ -46,5 +48,46 @@ public class TestEngineInitMethods {
         // Test King Attacks
         assertEquals(0b1000000011000000000000000000000000000000000000000000000000L, Config.KING_ATTACKS[56]);
         assertEquals(0b111000001010000011100000000000000000000L, Config.KING_ATTACKS[Config.BOARDSQUARES.get("f5")]);
+    }
+    @Test
+    void testInitSliderPiecesAttacks() {
+        /*
+         * 1. Get attack mask by doing generatePieceAttack(square)
+         * 2. Get magic number: Config.piece_magic_number[square]
+         * 3. Set relevant_bit_count to be number of set bits in attack mask
+         * 4. Set occupancy_index to be 1L << relevant_bit_count
+         * 5. Pick index in range(occupancy_index) 
+         * 6. Set occupancy to be OccupancySetter(index, relevant_bit_count, attack_mask)
+         * 7. Generate magic_index: (int) ((((occupancy * magicCandidate) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL)
+         * 8. Attack for the piece on that square and with that magic_index should be piece_attack_on_the_fly(square, occupancy)
+         */
+        
+        // Test Rook Attacks
+        int square = Config.BOARDSQUARES.get("f5");
+        long attackMask = AttacksGenerator.generateRookAttacks(square);
+        long magicNumber = Config.ROOK_MAGIC_NUMBERS[square];
+        int numberOfSetBits = Long.bitCount(attackMask);
+        int index = 33;
+        long occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
+        int magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+        long expected = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
+        assertEquals(expected, Config.ROOK_ATTACKS[square][magicIndex]);
+
+        index = 41;
+        occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
+        magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+        expected = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
+        assertEquals(expected, Config.ROOK_ATTACKS[square][magicIndex]);
+
+        // Test Bishop Attacks
+        square = Config.BOARDSQUARES.get("b2");
+        attackMask = AttacksGenerator.generateBishopAttacks(square);
+        magicNumber = Config.BISHOP_MAGIC_NUMBERS[square];
+        numberOfSetBits = Long.bitCount(attackMask);
+        index = 9;
+        occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
+        magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+        expected = AttacksGenerator.getBishopAttacksOnTheFly(square, occupancy);
+        assertEquals(expected, Config.BISHOP_ATTACKS[square][magicIndex]);
     }
 }

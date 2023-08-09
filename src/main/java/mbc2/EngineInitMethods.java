@@ -38,12 +38,45 @@ public class EngineInitMethods {
         }
     }
 
+    private static void initSliderPiecesAttacks(boolean isBishop) {
+        long attackMask, magicNumber;
+        for (int square = 0; square < 64; square++) {
+            // First, we initialise the attack mask for this square
+            if (isBishop) {
+                Config.BISHOP_MASKS[square] = AttacksGenerator.generateBishopAttacks(square);
+                attackMask = Config.BISHOP_MASKS[square];
+                magicNumber = Config.BISHOP_MAGIC_NUMBERS[square];
+            } else {
+                Config.ROOK_MASKS[square] = AttacksGenerator.generateRookAttacks(square);
+                attackMask = Config.ROOK_MASKS[square];
+                magicNumber = Config.ROOK_MAGIC_NUMBERS[square];
+            }
+            int numberOfSetBits = Long.bitCount(attackMask);
+            int occupancyIndices = 1 << numberOfSetBits;
+
+            for (int index = 0; index < occupancyIndices; index++) {
+                long occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
+                int magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+                if (isBishop) {
+                    magicIndex = magicIndex < 0 ? 512 + magicIndex : magicIndex; 
+                    // Finally
+                    Config.BISHOP_ATTACKS[square][magicIndex] = AttacksGenerator.getBishopAttacksOnTheFly(square, occupancy);
+                } else {
+                    magicIndex = magicIndex < 0 ? 4096 + magicIndex : magicIndex; 
+                    Config.ROOK_ATTACKS[square][magicIndex] = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
+                }
+            }
+        }
+    }
+
     public static void initAll() {
         initBoardSquares();
         initPieces();
         initColours();
         initCastling();
         initLeaperPiecesAttacks();
+        initSliderPiecesAttacks(true);
+        initSliderPiecesAttacks(false);
     }
 
 }

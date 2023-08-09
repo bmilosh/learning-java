@@ -203,4 +203,8 @@ public class AttacksGenerator {
     public static long getQueenAttacksOnTheFly(int square, long bitboard) {
         return getBishopAttacksOnTheFly(square, bitboard) | getRookAttacksOnTheFly(square, bitboard);
     }
+
+    public static long getRookAttacks(int square) {
+        return -1L;
+    }
 }
