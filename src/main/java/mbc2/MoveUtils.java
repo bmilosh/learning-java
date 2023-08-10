@@ -16,4 +16,8 @@ public class MoveUtils {
             | (Config.KING_ATTACKS[square] & Config.PIECE_BITBOARDS[offset + 5])
         ) != 0;
     }
+
+    public static boolean isKingUnderCheck(int square, int opponentColour) {
+        return isSquareAttacked(square, opponentColour);
+    }
 }

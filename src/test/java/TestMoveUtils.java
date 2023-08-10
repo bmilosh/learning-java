@@ -28,4 +28,14 @@ public class TestMoveUtils {
         Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[6] | Config.PIECE_BITBOARDS[3];
         Assertions.assertFalse(MoveUtils.isSquareAttacked(15, 0));
     }
+    @Test
+    void testIsKingUnderCheck() {
+        Config.PIECE_BITBOARDS[5] |= (1L << 16);
+        Assertions.assertTrue(MoveUtils.isKingUnderCheck(16, 1));
+
+        Config.PIECE_BITBOARDS[4] |= (1L << Config.BOARDSQUARES.get("g4"));
+        Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[4];
+        Assertions.assertTrue(MoveUtils.isKingUnderCheck(Config.BOARDSQUARES.get("e6"), 0));
+        Assertions.assertFalse(MoveUtils.isKingUnderCheck(Config.BOARDSQUARES.get("h8"), 0));
+    }
 }
