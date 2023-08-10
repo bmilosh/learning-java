@@ -486,4 +486,6 @@ public class Config {
         0x4010011029020020L,
     };
 
+    public static int[] numsarr1 = {2,3,4,5}; // Only here for testing BoardState
+
 }
