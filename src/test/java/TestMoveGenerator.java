@@ -69,4 +69,41 @@ public class TestMoveGenerator {
         moveList.sort(null);
         Assertions.assertTrue(moveList.equals(expectedList));
     }
+
+    @Test
+    void testGetNonPawnMoves() {
+        ArrayList<Integer> moveList = new ArrayList<>();
+        MoveGenerator.getNonPawnMoves(1, 1, Config.KNIGHT_ATTACKS[1], 7, moveList);
+        Assertions.assertEquals(2, moveList.size());
+            ArrayList<Integer> expectedList = new ArrayList<>(List.of(
+            0b0111010000000001,
+            0b0111010010000001
+        ));
+        expectedList.sort(null);
+        moveList.sort(null);
+        Assertions.assertTrue(moveList.equals(expectedList));
+
+        // Get moves for white knight on d5 and some pieces scattered around
+        int square = Config.BOARDSQUARES.get("d5");
+        Config.PIECE_BITBOARDS[1] |= (1L << square); // put a white knight on d5
+        Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[1]; // update total occupancies
+        Config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("b4")); // blocked square (occupied by own piece)
+        Config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("f6")); // blocked square (occupied by own piece)
+        Config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("e3")); // blocked square (occupied by own piece)
+        Config.OCCUPANCIES[1] |= (1L << Config.BOARDSQUARES.get("f4")); // piece to capture
+        Config.OCCUPANCIES[2] |= Config.OCCUPANCIES[1]; // update total occupancies
+        moveList = new ArrayList<>();
+        MoveGenerator.getNonPawnMoves(square, 0, Config.KNIGHT_ATTACKS[square], 1, moveList);
+        Assertions.assertEquals(5, moveList.size());
+        expectedList = new ArrayList<>(List.of(
+            0b1101010011011,
+            0b1010001011011,
+            0b100000001001010011011,
+            0b100000001001100011011,
+            0b100000001100101011011
+        ));
+        expectedList.sort(null);
+        moveList.sort(null);
+        Assertions.assertTrue(moveList.equals(expectedList));
+    }
 }

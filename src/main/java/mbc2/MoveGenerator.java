@@ -106,4 +106,31 @@ public class MoveGenerator {
             getNonCapturePawnMoves(source, squareOffset, ownColour, piece, moveList);
         }
     }
+
+    public static void getNonPawnMoves(
+        int source,
+        int ownColour,
+        long attacks,
+        int piece,
+        ArrayList<Integer> moveList
+    ) {
+        long nonCaptureMoves = attacks & ~Config.OCCUPANCIES[2];
+        long captureMoves = attacks & Config.OCCUPANCIES[ownColour ^ 1];
+
+        // Process non-capture moves
+        while (nonCaptureMoves != 0) {
+            int target = BitBoard.getLSBIndex(nonCaptureMoves);
+            nonCaptureMoves &= ~Long.lowestOneBit(nonCaptureMoves);
+            int encodedMove = MoveCoder.encodeMove(source, target, piece, 0, 0, 0, 0, 0);
+            moveList.add(encodedMove);
+        }
+        // Process captures
+        while (captureMoves != 0) {
+            int target = BitBoard.getLSBIndex(captureMoves);
+            captureMoves &= ~Long.lowestOneBit(captureMoves);
+            int encodedMove = MoveCoder.encodeMove(source, target, piece, 0, 1, 0, 0, 0);
+            moveList.add(encodedMove);            
+        }
+    }
+
 }
