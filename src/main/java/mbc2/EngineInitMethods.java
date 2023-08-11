@@ -69,6 +69,21 @@ public class EngineInitMethods {
         }
     }
 
+    private static void initPawnMovesMask() {
+        for (int square = 8; square < 56; square++) {
+            // set double pawn push for second and seventh ranks
+            if (square >= 8 && square < 16) {
+                Config.PAWN_MOVES_MASKS[Config.COLOURS.get('b')][square] = (1L << (square + 16));
+            } else if (square >= 48 && square < 56) {
+                Config.PAWN_MOVES_MASKS[Config.COLOURS.get('w')][square] = (1L << (square - 16));
+            } 
+
+            // regular pawn push
+            Config.PAWN_MOVES_MASKS[Config.COLOURS.get('w')][square] |= (1L << (square - 8));
+            Config.PAWN_MOVES_MASKS[Config.COLOURS.get('b')][square] |= (1L << (square + 8));
+        }
+    }
+
     public static void initAll() {
         initBoardSquares();
         initPieces();
@@ -77,6 +92,7 @@ public class EngineInitMethods {
         initLeaperPiecesAttacks();
         initSliderPiecesAttacks(true);
         initSliderPiecesAttacks(false);
+        initPawnMovesMask();
     }
 
 }

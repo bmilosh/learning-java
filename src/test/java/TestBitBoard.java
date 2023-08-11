@@ -32,6 +32,13 @@ public class TestBitBoard {
     }
 
     @Test
+    void testGetLSBIndex() {        
+        assertEquals(4, BitBoard.getLSBIndex(0b10010000));
+        assertEquals(-1, BitBoard.getLSBIndex(0));
+        assertEquals(0, BitBoard.getLSBIndex(0b10101010111));
+    }
+
+    @Test
     void testPopBitAtIndex() {        
         long position = BitBoard.popBitAtIndex(TestBitBoard.bitboard1, 4);
         assertEquals(1073741824L, position);
