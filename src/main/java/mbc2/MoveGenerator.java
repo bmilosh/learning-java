@@ -158,7 +158,7 @@ public class MoveGenerator {
         long emptySquares = isKingSide ? 0b11L : 0b111L;
         int leftShift = isKingSide ? kingPosition + 1 : kingPosition - 3;
         int squareBesideKing = isKingSide ? kingPosition + 1 : kingPosition - 1;
-        
+
         return (
             (Config.CASTLING_RIGHT & Config.CASTLING.get(castleToSide)) != 0 && // player has appropriate castling right
             !MoveUtils.isKingUnderCheck(kingPosition, opponentColour) &&
@@ -167,5 +167,97 @@ public class MoveGenerator {
             // !MoveUtils.isSquareAttacked(kingPosition + 1, opponentColour) &&    // king isn't crossing an attacked square
             // ((3L << kingPosition + 1) & Config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
         );
+    }
+
+    public static ArrayList<Integer> generateMoves() {
+        /*
+         * Generates all moves that can be made by the player
+         * whose turn it is to move.
+         */
+        ArrayList<Integer> moveList = new ArrayList<>();
+        char stm = Config.SIDE_TO_MOVE;
+        int ownColour = Config.COLOURS.get(stm);
+        // loop over pieces and corresponding bitboards
+        for (int idx = 0; idx < 12; idx++) {
+            long bitboard = Config.PIECE_BITBOARDS[idx];
+            char piece = Config.ASCII_PIECES[idx];
+
+            // Handle pawn moves
+            if (piece == 'p' && stm == 'b') {
+                getAllPawnMoves(bitboard, 8, ownColour, idx, moveList);
+            }
+            else if (piece == 'P' && stm == 'w') {
+                getAllPawnMoves(bitboard, -8, ownColour, idx, moveList);
+            }
+
+            // Handle king moves
+            else if ((piece == 'K' && stm == 'w') || (piece == 'k' && stm == 'b')) {
+                // Add castling moves, if possible.
+                char queenSide = (piece == 'K') ? 'Q' : 'q';
+                int rank = (piece == 'K') ? 1 : 8;
+                // Kingside castling
+                if (canCastle(piece, Config.BOARDSQUARES.get(String.format("e%d", rank)), ownColour ^ 1)) {
+                    int encodedMove = MoveCoder.encodeMove(
+                        Config.BOARDSQUARES.get(String.format("e%d", rank)),
+                        Config.BOARDSQUARES.get(String.format("g%d", rank)),
+                        idx, 0, 0, 0, 0, 0
+                    );
+                    moveList.add(encodedMove);
+                }
+                // Queenside castling
+                if (canCastle(queenSide, Config.BOARDSQUARES.get(String.format("e%d", rank)), ownColour ^ 1)) {
+                    int encodedMove = MoveCoder.encodeMove(
+                        Config.BOARDSQUARES.get(String.format("e%d", rank)),
+                        Config.BOARDSQUARES.get(String.format("c%d", rank)),
+                        idx, 0, 0, 0, 0, 0
+                    );
+                    moveList.add(encodedMove);
+                }
+                // Handle other king moves
+                while (bitboard != 0) {
+                    int source = BitBoard.getLSBIndex(bitboard);
+                    bitboard &= ~Long.lowestOneBit(bitboard);
+                    long attacks = Config.KING_ATTACKS[source];
+                    getNonPawnMoves(source, ownColour, attacks, idx, moveList);
+                }
+            }
+            // Handle knight moves
+            else if ((piece == 'N' && stm == 'w') || (piece == 'n' && stm == 'b')) {
+                while (bitboard != 0) {
+                    int source = BitBoard.getLSBIndex(bitboard);
+                    bitboard &= ~Long.lowestOneBit(bitboard);
+                    long attacks = Config.KNIGHT_ATTACKS[source];
+                    getNonPawnMoves(source, ownColour, attacks, idx, moveList);
+                }
+            }
+            // Handle bishop moves
+            else if ((piece == 'B' && stm == 'w') || (piece == 'b' && stm == 'b')) {
+                while (bitboard != 0) {
+                    int source = BitBoard.getLSBIndex(bitboard);
+                    bitboard &= ~Long.lowestOneBit(bitboard);
+                    long attacks = AttacksGenerator.getBishopAttacks(source, Config.OCCUPANCIES[2]);
+                    getNonPawnMoves(source, ownColour, attacks, piece, moveList);
+                }
+            }
+            // Handle rook moves
+            else if ((piece == 'B' && stm == 'w') || (piece == 'b' && stm == 'b')) {
+                while (bitboard != 0) {
+                    int source = BitBoard.getLSBIndex(bitboard);
+                    bitboard &= ~Long.lowestOneBit(bitboard);
+                    long attacks = AttacksGenerator.getRookAttacks(source, Config.OCCUPANCIES[2]);
+                    getNonPawnMoves(source, ownColour, attacks, piece, moveList);
+                }
+            }
+            // Handle queen moves
+            else if ((piece == 'B' && stm == 'w') || (piece == 'b' && stm == 'b')) {
+                while (bitboard != 0) {
+                    int source = BitBoard.getLSBIndex(bitboard);
+                    bitboard &= ~Long.lowestOneBit(bitboard);
+                    long attacks = AttacksGenerator.getQueenAttacks(source, Config.OCCUPANCIES[2]);
+                    getNonPawnMoves(source, ownColour, attacks, piece, moveList);
+                }
+            }
+        }
+        return moveList;
     }
 }

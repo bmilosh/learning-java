@@ -109,19 +109,20 @@ public class TestMoveGenerator {
 
     @Test
     void testCanCastle() {
-        long tempPB = Config.PIECE_BITBOARDS[1];
-        long tempPB7 = Config.PIECE_BITBOARDS[7];
-        long tempOcc = Config.OCCUPANCIES[2];
         /*
         kingside castling
         */ 
         // no castling right
         Assertions.assertFalse(MoveGenerator.canCastle('K', Config.BOARDSQUARES.get("e1"), 1));
         /*
-         * The following checks, while fine, if run with the whole test suite
-         * will unfortunately break other tests, most likely because they modify
-         * Occupancies and PieceBitboards a lot.
-         */
+        * The following checks, while fine, if run with the whole test suite
+        * will unfortunately break other tests, most likely because they modify
+        * Occupancies and PieceBitboards a lot.
+        */
+
+        // long tempPB = Config.PIECE_BITBOARDS[1];
+        // long tempPB7 = Config.PIECE_BITBOARDS[7];
+        // long tempOcc = Config.OCCUPANCIES[2];
 
         // // attack f square
         // Config.OCCUPANCIES[2] &= ~(3L << 5);  // clear f8 and g8 squares
@@ -162,5 +163,39 @@ public class TestMoveGenerator {
         // Config.PIECE_BITBOARDS[7] = tempPB7;
         // Config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("b1")) & ~(3L << Config.BOARDSQUARES.get("c1"));  // clear c1 and d1 squares, and occupy b1
         // Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
+    }
+
+    @Test
+    void testGenerateAllMoves() {
+        ArrayList<Integer> moveList = MoveGenerator.generateMoves();
+        ArrayList<Integer> expectedList = new ArrayList<>(List.of(
+            // pawn moves
+            0b101000110000,
+            0b1000000000100000110000,
+            0b101001110001,
+            0b1000000000100001110001,
+            0b101010110010,
+            0b1000000000100010110010,
+            0b101011110011,
+            0b1000000000100011110011,
+            0b101100110100,
+            0b1000000000100100110100,
+            0b101101110101,
+            0b1000000000100101110101,
+            0b101110110110,
+            0b1000000000100110110110,
+            0b101111110111,
+            0b1000000000100111110111,
+            // knight moves
+            0b1101000111001,
+            0b1101010111001,
+            0b1101101111110,
+            0b1101111111110
+        ));
+        Assertions.assertEquals(expectedList.size(), moveList.size());
+        expectedList.sort(null);
+        moveList.sort(null);
+        Assertions.assertTrue(moveList.equals(expectedList));
+
     }
 }
