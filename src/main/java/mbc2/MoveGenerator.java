@@ -133,4 +133,39 @@ public class MoveGenerator {
         }
     }
 
+    public static boolean canCastle(char castleToSide, int kingPosition, int opponentColour) {
+        /*
+         *  :Inputs:
+                - castleToSide = 'K' if white else 'k' for kingside castling and 'Q' or 'q' if queenside
+
+            :Outputs:
+                - boolean indicating ability to castle to indicated side
+
+            IMPORTANT: This method assumes that castling rights have been set up properly!
+
+            Castling rules: 'Castling is permitted only if neither the king nor the rook
+            has previously moved (we're not checking these in this method); the squares
+            between the king and the rook are vacant; and the king does not leave (e),
+            cross over (d or f), or finish (c or g) on a square attacked by an enemy piece.'
+
+            Source: 'https://en.wikipedia.org/wiki/Castling'
+            (Words in parentheses mine)
+
+         */
+        // if ((Config.CASTLING_RIGHT & Config.CASTLING.get(king)) == 0) return false;
+        // boolean notKingUnderCheck = !MoveUtils.isKingUnderCheck(kingPosition, opponentColour);
+        boolean isKingSide = Character.toLowerCase(castleToSide) == 'k';
+        long emptySquares = isKingSide ? 0b11L : 0b111L;
+        int leftShift = isKingSide ? kingPosition + 1 : kingPosition - 3;
+        int squareBesideKing = isKingSide ? kingPosition + 1 : kingPosition - 1;
+        
+        return (
+            (Config.CASTLING_RIGHT & Config.CASTLING.get(castleToSide)) != 0 && // player has appropriate castling right
+            !MoveUtils.isKingUnderCheck(kingPosition, opponentColour) &&
+            !MoveUtils.isSquareAttacked(squareBesideKing, opponentColour) &&    // king isn't crossing an attacked square
+            ((emptySquares << leftShift) & Config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
+            // !MoveUtils.isSquareAttacked(kingPosition + 1, opponentColour) &&    // king isn't crossing an attacked square
+            // ((3L << kingPosition + 1) & Config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
+        );
+    }
 }

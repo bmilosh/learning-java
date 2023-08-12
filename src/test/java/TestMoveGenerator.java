@@ -106,4 +106,61 @@ public class TestMoveGenerator {
         moveList.sort(null);
         Assertions.assertTrue(moveList.equals(expectedList));
     }
+
+    @Test
+    void testCanCastle() {
+        long tempPB = Config.PIECE_BITBOARDS[1];
+        long tempPB7 = Config.PIECE_BITBOARDS[7];
+        long tempOcc = Config.OCCUPANCIES[2];
+        /*
+        kingside castling
+        */ 
+        // no castling right
+        Assertions.assertFalse(MoveGenerator.canCastle('K', Config.BOARDSQUARES.get("e1"), 1));
+        /*
+         * The following checks, while fine, if run with the whole test suite
+         * will unfortunately break other tests, most likely because they modify
+         * Occupancies and PieceBitboards a lot.
+         */
+
+        // // attack f square
+        // Config.OCCUPANCIES[2] &= ~(3L << 5);  // clear f8 and g8 squares
+        // Config.PIECE_BITBOARDS[1] |= (1L << Config.BOARDSQUARES.get("e6")); // put a white knight on e6
+        // Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[1]; // update total occupancies
+        // Config.CASTLING_RIGHT |= Config.CASTLING.get('k');  // Add black kingside castling right
+        // Assertions.assertFalse(MoveGenerator.canCastle('k', Config.BOARDSQUARES.get("e8"), 0));
+
+        // // occupy g square
+        // Config.CASTLING_RIGHT |= Config.CASTLING.get('K');  // Add white kingside castling right
+        // Config.PIECE_BITBOARDS[1] = tempPB;
+        // Config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("g1")) & ~(1L << Config.BOARDSQUARES.get("f1"));  // clear f1 and occupy g1 squares
+        // Assertions.assertFalse(MoveGenerator.canCastle('K', Config.BOARDSQUARES.get("e1"), 1));
+        
+        // /*
+        // queenside castling
+        // */ 
+        // // can castle queenside
+        // Config.PIECE_BITBOARDS[1] = tempPB;
+        // Config.OCCUPANCIES[2] = tempOcc & ~(7L << 1);  // clear b8, c8 and d8 squares
+        // Config.CASTLING_RIGHT |= Config.CASTLING.get('q');  // Add black kingside castling right
+        // Assertions.assertTrue(MoveGenerator.canCastle('q', Config.BOARDSQUARES.get("e8"), 0));
+
+        // // no castling right
+        // Config.CASTLING_RIGHT = 0;
+        // Assertions.assertFalse(MoveGenerator.canCastle('q', Config.BOARDSQUARES.get("e8"), 0));
+
+        // // attack d square
+        // Config.OCCUPANCIES[2] = tempOcc & ~(7L << (Config.BOARDSQUARES.get("d1") - 2));  // clear b1, c1 and d1 squares
+        // Config.PIECE_BITBOARDS[7] |= (1L << Config.BOARDSQUARES.get("c3")); // put a black knight on c3
+        // Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[7]; // update total occupancies
+        // Config.CASTLING_RIGHT |= Config.CASTLING.get('Q');  // Add white queenside castling right
+        // Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
+        
+        // // occupy b square
+        // Config.CASTLING_RIGHT |= Config.CASTLING.get('Q');  // Add white kingside castling right
+        // // Config.PIECE_BITBOARDS[1] = tempPB;
+        // Config.PIECE_BITBOARDS[7] = tempPB7;
+        // Config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("b1")) & ~(3L << Config.BOARDSQUARES.get("c1"));  // clear c1 and d1 squares, and occupy b1
+        // Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
+    }
 }
