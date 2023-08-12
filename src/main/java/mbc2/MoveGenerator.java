@@ -23,6 +23,7 @@ public class MoveGenerator {
             :Inputs:
                 - offset +8 if black else -8
         */
+        int promotionOffset = (squareOffset == 8) ? 0 : -6;
         long move = ((1 - (1 & (Config.OCCUPANCIES[2] >> (source + squareOffset)))) *
                             (Config.PAWN_MOVES_MASKS[ownColour][source] & ~Config.OCCUPANCIES[2]));
         while (move != 0) {
@@ -31,7 +32,7 @@ public class MoveGenerator {
             if ((target >= 0 && target < 8) || (target >= 56 && target < 64)) {
                 // We're promoting the pawn.
                 for (int num = 10; num >= 7; num--) {
-                    int encodedMove = MoveCoder.encodeMove(source, target, piece, num, 0, 0, 0, 0);
+                    int encodedMove = MoveCoder.encodeMove(source, target, piece, num + promotionOffset, 0, 0, 0, 0);
                     moveList.add(encodedMove);
                 }
             } 
@@ -71,6 +72,7 @@ public class MoveGenerator {
             :Inputs:
                 - offset +8 if black else -8
          */
+        int promotionOffset = (squareOffset == 8) ? 0 : -6;
         while (pawnBitboard != 0) {
             int source = BitBoard.getLSBIndex(pawnBitboard);
             pawnBitboard &= ~Long.lowestOneBit(pawnBitboard);
@@ -92,7 +94,7 @@ public class MoveGenerator {
                 // Check if it's a promotion-capture
                 if ((target >= 0 && target < 8) || (target >= 56 && target < 64)) {
                     for (int num = 10; num >= 7; num--) {
-                        int encodedMove = MoveCoder.encodeMove(source, target, piece, num, 1,
+                        int encodedMove = MoveCoder.encodeMove(source, target, piece, num + promotionOffset, 1,
                              0, 0, 0);
                         moveList.add(encodedMove);
                     }
