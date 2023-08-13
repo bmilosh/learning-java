@@ -125,6 +125,7 @@ public class Config {
     public static long[] MOVE_LIST = new long[256];
     public static int MOVE_COUNT = 0;
     public static long BEST_MOVE = 0;
+    public static int LEAF_NODES = 0;
 
     /*
      *  ################################################
@@ -485,7 +486,5 @@ public class Config {
         0x8918844842082200L,
         0x4010011029020020L,
     };
-
-    public static int[] numsarr1 = {2,3,4,5}; // Only here for testing BoardState
 
 }

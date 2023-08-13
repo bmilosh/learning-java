@@ -22,6 +22,14 @@ public class MoveUtils {
         return isSquareAttacked(square, opponentColour);
     }
 
+    public static String moveToString(int move) {
+        int promotedPiece = MoveCoder.getPromotedPiece(move);
+        char pMS = promotedPiece != 0 ? Config.ASCII_PIECES[promotedPiece] : ' ';
+        String source = Config.SQUARES[MoveCoder.getSourceSquare(move)];
+        String target = Config.SQUARES[MoveCoder.getTargetSquare(move)];
+        return String.format("%s%s%s", source,target, pMS);
+    }
+
     public static boolean makeMove(int move, boolean onlyCaptures) {
         if (!onlyCaptures) {
             // We first need to preserve current board state in case we need

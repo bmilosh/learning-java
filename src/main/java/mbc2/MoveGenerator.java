@@ -154,8 +154,6 @@ public class MoveGenerator {
             (Words in parentheses mine)
 
          */
-        // if ((Config.CASTLING_RIGHT & Config.CASTLING.get(king)) == 0) return false;
-        // boolean notKingUnderCheck = !MoveUtils.isKingUnderCheck(kingPosition, opponentColour);
         boolean isKingSide = Character.toLowerCase(castleToSide) == 'k';
         long emptySquares = isKingSide ? 0b11L : 0b111L;
         int leftShift = isKingSide ? kingPosition + 1 : kingPosition - 3;
@@ -166,8 +164,6 @@ public class MoveGenerator {
             !MoveUtils.isKingUnderCheck(kingPosition, opponentColour) &&
             !MoveUtils.isSquareAttacked(squareBesideKing, opponentColour) &&    // king isn't crossing an attacked square
             ((emptySquares << leftShift) & Config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
-            // !MoveUtils.isSquareAttacked(kingPosition + 1, opponentColour) &&    // king isn't crossing an attacked square
-            // ((3L << kingPosition + 1) & Config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
         );
     }
 
@@ -238,25 +234,25 @@ public class MoveGenerator {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
                     long attacks = AttacksGenerator.getBishopAttacks(source, Config.OCCUPANCIES[2]);
-                    getNonPawnMoves(source, ownColour, attacks, piece, moveList);
+                    getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
             // Handle rook moves
-            else if ((piece == 'B' && stm == 'w') || (piece == 'b' && stm == 'b')) {
+            else if ((piece == 'R' && stm == 'w') || (piece == 'r' && stm == 'b')) {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
                     long attacks = AttacksGenerator.getRookAttacks(source, Config.OCCUPANCIES[2]);
-                    getNonPawnMoves(source, ownColour, attacks, piece, moveList);
+                    getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
             // Handle queen moves
-            else if ((piece == 'B' && stm == 'w') || (piece == 'b' && stm == 'b')) {
+            else if ((piece == 'Q' && stm == 'w') || (piece == 'q' && stm == 'b')) {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
                     long attacks = AttacksGenerator.getQueenAttacks(source, Config.OCCUPANCIES[2]);
-                    getNonPawnMoves(source, ownColour, attacks, piece, moveList);
+                    getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
         }

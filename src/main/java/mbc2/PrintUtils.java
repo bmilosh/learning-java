@@ -20,4 +20,8 @@ public class PrintUtils {
         System.out.println("\n     a  b  c  d  e  f  g  h\n");
         System.out.println("        Bitboard: " + bitboard);
     }
+
+    public static void printMove(int move) {
+        System.out.println(MoveUtils.moveToString(move));
+    }
 }

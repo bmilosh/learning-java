@@ -11,7 +11,6 @@ public class BoardState {
      * 
      * boardState.restoreBoardState();
      */
-    private int[] numsarr1; // Only here for testing purposes
     private long[] PIECE_BITBOARDS_COPY;
     private long[] OCCUPANCIES_COPY;
     private char SIDE_TO_MOVE_COPY;
@@ -19,7 +18,6 @@ public class BoardState {
     private String ENPASSANT_SQUARE_COPY;
 
     public void copyBoardState() {
-        this.numsarr1 = Config.numsarr1.clone();
         this.PIECE_BITBOARDS_COPY = Config.PIECE_BITBOARDS.clone();
         this.OCCUPANCIES_COPY = Config.OCCUPANCIES.clone();
         this.SIDE_TO_MOVE_COPY = Config.SIDE_TO_MOVE;
@@ -28,7 +26,6 @@ public class BoardState {
     }
 
     public void restoreBoardState() {
-        Config.numsarr1 = this.numsarr1;
         Config.PIECE_BITBOARDS = this.PIECE_BITBOARDS_COPY;
         Config.OCCUPANCIES = this.OCCUPANCIES_COPY;
         Config.SIDE_TO_MOVE = this.SIDE_TO_MOVE_COPY;
