@@ -38,4 +38,16 @@ public class TestMoveUtils {
         Assertions.assertTrue(MoveUtils.isKingUnderCheck(Config.BOARDSQUARES.get("e6"), 0));
         Assertions.assertFalse(MoveUtils.isKingUnderCheck(Config.BOARDSQUARES.get("h8"), 0));
     }
+
+    @Test
+    void testMoveToString() {
+        int move = 0b110010000001000;
+        Assertions.assertEquals("a7a6", MoveUtils.moveToString(move));
+        
+        move = 0b10101111111110;
+        Assertions.assertEquals("g1h3", MoveUtils.moveToString(move));
+        
+        move = 0b101000000000010001011;
+        Assertions.assertEquals("d7c8q", MoveUtils.moveToString(move));
+    }
 }
