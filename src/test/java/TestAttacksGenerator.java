@@ -1,6 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import mbc2.AttacksGenerator;
@@ -8,10 +8,14 @@ import mbc2.Config;
 import mbc2.EngineInitMethods;
 
 public class TestAttacksGenerator {
-    @BeforeAll
-    public static void setup() {
+    // private static Config Config;
+    @BeforeEach
+    void setup() {
+        // Config = new Config();
+        // EngineInitMethods EngineInitMethods = new EngineInitMethods(Config);
         EngineInitMethods.initAll();
     }
+
     @Test
     void testGeneratePawnAttacks() {
         assertEquals(0L, AttacksGenerator.generatePawnAttacks('w', Config.BOARDSQUARES.get("h8")));

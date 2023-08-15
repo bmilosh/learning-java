@@ -14,22 +14,27 @@ public class BoardState {
     private long[] PIECE_BITBOARDS_COPY;
     private long[] OCCUPANCIES_COPY;
     private char SIDE_TO_MOVE_COPY;
-    private int CASTLING_RIGHT_COPY, MOVE_COUNT_COPY;
+    private int CASTLING_RIGHT_COPY;
     private String ENPASSANT_SQUARE_COPY;
+    private Config Config;
+
+    public BoardState(Config Config) {
+        this.Config = Config;
+    }
 
     public void copyBoardState() {
-        this.PIECE_BITBOARDS_COPY = Config.PIECE_BITBOARDS.clone();
-        this.OCCUPANCIES_COPY = Config.OCCUPANCIES.clone();
-        this.SIDE_TO_MOVE_COPY = Config.SIDE_TO_MOVE;
-        this.CASTLING_RIGHT_COPY = Config.CASTLING_RIGHT;
-        this.ENPASSANT_SQUARE_COPY = Config.ENPASSANT_SQUARE;
+        this.PIECE_BITBOARDS_COPY = this.Config.PIECE_BITBOARDS.clone();
+        this.OCCUPANCIES_COPY = this.Config.OCCUPANCIES.clone();
+        this.SIDE_TO_MOVE_COPY = this.Config.SIDE_TO_MOVE;
+        this.CASTLING_RIGHT_COPY = this.Config.CASTLING_RIGHT;
+        this.ENPASSANT_SQUARE_COPY = this.Config.ENPASSANT_SQUARE;
     }
 
     public void restoreBoardState() {
-        Config.PIECE_BITBOARDS = this.PIECE_BITBOARDS_COPY;
-        Config.OCCUPANCIES = this.OCCUPANCIES_COPY;
-        Config.SIDE_TO_MOVE = this.SIDE_TO_MOVE_COPY;
-        Config.CASTLING_RIGHT = this.CASTLING_RIGHT_COPY;
-        Config.ENPASSANT_SQUARE = this.ENPASSANT_SQUARE_COPY;
+        this.Config.PIECE_BITBOARDS = this.PIECE_BITBOARDS_COPY;
+        this.Config.OCCUPANCIES = this.OCCUPANCIES_COPY;
+        this.Config.SIDE_TO_MOVE = this.SIDE_TO_MOVE_COPY;
+        this.Config.CASTLING_RIGHT = this.CASTLING_RIGHT_COPY;
+        this.Config.ENPASSANT_SQUARE = this.ENPASSANT_SQUARE_COPY;
     }
 }

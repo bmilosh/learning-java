@@ -1,15 +1,16 @@
 package mbc2;
 
 public class MagicNumberGenerator {
-    private static long generateCandidateMagicNumber() {
+
+    private static long generateCandidateMagicNumber(Config Config) {
         return (
-            PseudorandomGenerator.generateRandom64bitNumber()
-            & PseudorandomGenerator.generateRandom64bitNumber()
-            & PseudorandomGenerator.generateRandom64bitNumber()
+            PseudorandomGenerator.generateRandom64bitNumber(Config)
+            & PseudorandomGenerator.generateRandom64bitNumber(Config)
+            & PseudorandomGenerator.generateRandom64bitNumber(Config)
         );
     }
 
-    public static long generateMagicNumber(int square, int numberOfSetBits, boolean isBishop) {
+    public static long generateMagicNumber(int square, int numberOfSetBits, boolean isBishop, Config Config) {
         /*
         *  :Input:
                 - square: an int representing the board square
@@ -49,7 +50,7 @@ public class MagicNumberGenerator {
         }
 
         for (int x = 0; x < 100_000_000; x++) {
-            long magicCandidate = generateCandidateMagicNumber();  // Doesn't work as int
+            long magicCandidate = generateCandidateMagicNumber(Config);  // Doesn't work as int
             if ((Long.bitCount((magicCandidate * attackMask) & 0xFF00000000000000L)) < 6) {
                 continue;
             }

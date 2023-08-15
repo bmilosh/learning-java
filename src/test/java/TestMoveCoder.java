@@ -1,5 +1,5 @@
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import mbc2.Config;
@@ -7,10 +7,13 @@ import mbc2.EngineInitMethods;
 import mbc2.MoveCoder;
 
 public class TestMoveCoder {
-    @BeforeAll
-    static void setup() {
+    // private static Config Config;
+    @BeforeEach
+    void setup() {
+        // Config = new Config();
         EngineInitMethods.initAll();
     }
+
     @Test
     void testMoveEncoding() {
         int moveSource = 0b111;

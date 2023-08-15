@@ -1,6 +1,8 @@
 package mbc2;
 
 public class PrintUtils {
+    // public static Config Config;
+    
     public static void printBitBoard(long bitboard) {
         System.out.println();
         for (int rank = 0; rank < 8; rank++) {
@@ -21,21 +23,33 @@ public class PrintUtils {
         System.out.println("        Bitboard: " + bitboard);
     }
 
-    public static void printMove(int move) {
-        System.out.println(MoveUtils.moveToString(move));
+    public static String moveToString(int move) {
+        int promotedPiece = MoveCoder.getPromotedPiece(move);
+        char pMS = promotedPiece != 0 ? Config.ASCII_PIECES[promotedPiece] : ' ';
+        char pMSLower = Character.toLowerCase(pMS);
+        String source = Config.SQUARES[MoveCoder.getSourceSquare(move)];
+        String target = Config.SQUARES[MoveCoder.getTargetSquare(move)];
+        if (pMSLower != ' ') {
+            return String.format("%s%s%s", source,target, pMSLower);
+        }
+        return String.format("%s%s", source, target);
     }
 
-    public static void printBoard() {
+    public static void printMove(int move) {
+        System.out.println(moveToString(move));
+    }
+
+    public static void printBoard(Config config) {
         System.out.println();
         // Get side to move and en passant square
-        String stm = Config.SIDE_TO_MOVE == 'w' ? "white" : "black";
-        String enPString = Config.ENPASSANT_SQUARE != "no_square" ? Config.ENPASSANT_SQUARE : "None";
+        String stm = config.SIDE_TO_MOVE == 'w' ? "white" : "black";
+        String enPString = config.ENPASSANT_SQUARE != "no_square" ? config.ENPASSANT_SQUARE : "None";
 
         // Get all castling rights
-        char K = (Config.CASTLING_RIGHT & 8) != 0 ? 'K' : '-';
-        char Q = (Config.CASTLING_RIGHT & 4) != 0 ? 'Q' : '-';
-        char k = (Config.CASTLING_RIGHT & 2) != 0 ? 'k' : '-';
-        char q = (Config.CASTLING_RIGHT & 1) != 0 ? 'q' : '-';
+        char K = (config.CASTLING_RIGHT & 8) != 0 ? 'K' : '-';
+        char Q = (config.CASTLING_RIGHT & 4) != 0 ? 'Q' : '-';
+        char k = (config.CASTLING_RIGHT & 2) != 0 ? 'k' : '-';
+        char q = (config.CASTLING_RIGHT & 1) != 0 ? 'q' : '-';
 
         for (int rank = 0; rank < 8; rank++) {
             for (int file = 0; file < 8; file++) {
@@ -44,8 +58,8 @@ public class PrintUtils {
                 }
                 int square = rank * 8 + file;
                 char piece = '.';
-                for (int idx = 0; idx < Config.PIECE_BITBOARDS.length; idx++) {
-                    if (BitBoard.getBitAtIndex(Config.PIECE_BITBOARDS[idx], square) != 0) {
+                for (int idx = 0; idx < config.PIECE_BITBOARDS.length; idx++) {
+                    if (BitBoard.getBitAtIndex(config.PIECE_BITBOARDS[idx], square) != 0) {
                         piece = Config.ASCII_PIECES[idx];
                         break;
                     }

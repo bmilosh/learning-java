@@ -1,6 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import mbc2.AttacksGenerator;
@@ -9,8 +9,11 @@ import mbc2.EngineInitMethods;
 import mbc2.OccupancySetter;
 
 public class TestEngineInitMethods {
-    @BeforeAll
-    static void setup() {
+    // private static Config Config;
+    @BeforeEach
+    void setup() {
+        // Config = new Config();
+        // EngineInitMethods EngineInitMethods = new EngineInitMethods(Config);
         EngineInitMethods.initAll();
     }
     @Test
@@ -38,16 +41,16 @@ public class TestEngineInitMethods {
     @Test
     void testInitLeaperPiecesAttacks() {
         // Test Pawn Attacks
-        assertEquals(0, Config.PAWN_ATTACKS[Config.COLOURS.get('w')][2]);
-        assertEquals(5, Config.PAWN_ATTACKS[Config.COLOURS.get('w')][9]);
-        assertEquals(-6917529027641081856L, Config.PAWN_ATTACKS[Config.COLOURS.get('b')][54]);
-        assertEquals(0b10000000000000000000000L, Config.PAWN_ATTACKS[Config.COLOURS.get('b')][15]);
+        assertEquals(0, AttacksGenerator.PAWN_ATTACKS[Config.COLOURS.get('w')][2]);
+        assertEquals(5, AttacksGenerator.PAWN_ATTACKS[Config.COLOURS.get('w')][9]);
+        assertEquals(-6917529027641081856L, AttacksGenerator.PAWN_ATTACKS[Config.COLOURS.get('b')][54]);
+        assertEquals(0b10000000000000000000000L, AttacksGenerator.PAWN_ATTACKS[Config.COLOURS.get('b')][15]);
         // Test Knight Attacks
-        assertEquals(0b1010000100010000000000010001000010100000000000000000000L, Config.KNIGHT_ATTACKS[37]);
-        assertEquals(0b10000000010000000000000L, Config.KNIGHT_ATTACKS[7]);
+        assertEquals(0b1010000100010000000000010001000010100000000000000000000L, AttacksGenerator.KNIGHT_ATTACKS[37]);
+        assertEquals(0b10000000010000000000000L, AttacksGenerator.KNIGHT_ATTACKS[7]);
         // Test King Attacks
-        assertEquals(0b1000000011000000000000000000000000000000000000000000000000L, Config.KING_ATTACKS[56]);
-        assertEquals(0b111000001010000011100000000000000000000L, Config.KING_ATTACKS[Config.BOARDSQUARES.get("f5")]);
+        assertEquals(0b1000000011000000000000000000000000000000000000000000000000L, AttacksGenerator.KING_ATTACKS[56]);
+        assertEquals(0b111000001010000011100000000000000000000L, AttacksGenerator.KING_ATTACKS[Config.BOARDSQUARES.get("f5")]);
     }
     @Test
     void testInitSliderPiecesAttacks() {
@@ -65,29 +68,29 @@ public class TestEngineInitMethods {
         // Test Rook Attacks
         int square = Config.BOARDSQUARES.get("f5");
         long attackMask = AttacksGenerator.generateRookAttacks(square);
-        long magicNumber = Config.ROOK_MAGIC_NUMBERS[square];
+        long magicNumber = AttacksGenerator.ROOK_MAGIC_NUMBERS[square];
         int numberOfSetBits = Long.bitCount(attackMask);
         int index = 33;
         long occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
         int magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
         long expected = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
-        assertEquals(expected, Config.ROOK_ATTACKS[square][magicIndex]);
+        assertEquals(expected, AttacksGenerator.ROOK_ATTACKS[square][magicIndex]);
 
         index = 41;
         occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
         magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
         expected = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
-        assertEquals(expected, Config.ROOK_ATTACKS[square][magicIndex]);
+        assertEquals(expected, AttacksGenerator.ROOK_ATTACKS[square][magicIndex]);
 
         // Test Bishop Attacks
         square = Config.BOARDSQUARES.get("b2");
         attackMask = AttacksGenerator.generateBishopAttacks(square);
-        magicNumber = Config.BISHOP_MAGIC_NUMBERS[square];
+        magicNumber = AttacksGenerator.BISHOP_MAGIC_NUMBERS[square];
         numberOfSetBits = Long.bitCount(attackMask);
         index = 9;
         occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
         magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
         expected = AttacksGenerator.getBishopAttacksOnTheFly(square, occupancy);
-        assertEquals(expected, Config.BISHOP_ATTACKS[square][magicIndex]);
+        assertEquals(expected, AttacksGenerator.BISHOP_ATTACKS[square][magicIndex]);
     }
 }

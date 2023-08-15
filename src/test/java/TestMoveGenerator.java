@@ -2,16 +2,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import mbc2.AttacksGenerator;
+import mbc2.BoardState;
 import mbc2.Config;
 import mbc2.EngineInitMethods;
 import mbc2.MoveGenerator;
+import mbc2.MoveUtils;
+import mbc2.Parsers;
 
 public class TestMoveGenerator {
-    @BeforeAll
-    static void setup() {
+    private static Config config;
+    private static MoveUtils MoveUtils;
+    private static MoveGenerator MoveGenerator;
+    @BeforeEach
+    void setup() {
+        config = new Config();
+        MoveUtils = new MoveUtils(config);
+        MoveGenerator = new MoveGenerator(MoveUtils, config);
+        // EngineInitMethods EngineInitMethods = new EngineInitMethods(Config);
         EngineInitMethods.initAll();
     }
 
@@ -19,7 +30,7 @@ public class TestMoveGenerator {
     void testGenerateAllPawnMoves() {
         // All white pawns from start position
         ArrayList<Integer> moveList = new ArrayList<>();
-        MoveGenerator.getAllPawnMoves(Config.PIECE_BITBOARDS[0], -8, 0, 0, moveList);
+        MoveGenerator.getAllPawnMoves(config.PIECE_BITBOARDS[0], -8, 0, 0, moveList);
         Assertions.assertEquals(16, moveList.size());
         ArrayList<Integer> expectedList = new ArrayList<>(List.of(
             0b101000110000,
@@ -45,7 +56,7 @@ public class TestMoveGenerator {
         
         // All black pawns from start position
         moveList = new ArrayList<>();
-        MoveGenerator.getAllPawnMoves(Config.PIECE_BITBOARDS[6], 8, 1, 6, moveList);
+        MoveGenerator.getAllPawnMoves(config.PIECE_BITBOARDS[6], 8, 1, 6, moveList);
         Assertions.assertEquals(16, moveList.size());
         expectedList = new ArrayList<>(List.of(
             0b110010000001000,
@@ -73,9 +84,9 @@ public class TestMoveGenerator {
     @Test
     void testGetNonPawnMoves() {
         ArrayList<Integer> moveList = new ArrayList<>();
-        MoveGenerator.getNonPawnMoves(1, 1, Config.KNIGHT_ATTACKS[1], 7, moveList);
+        MoveGenerator.getNonPawnMoves(1, 1, AttacksGenerator.KNIGHT_ATTACKS[1], 7, moveList);
         Assertions.assertEquals(2, moveList.size());
-            ArrayList<Integer> expectedList = new ArrayList<>(List.of(
+        ArrayList<Integer> expectedList = new ArrayList<>(List.of(
             0b0111010000000001,
             0b0111010010000001
         ));
@@ -85,15 +96,15 @@ public class TestMoveGenerator {
 
         // Get moves for white knight on d5 and some pieces scattered around
         int square = Config.BOARDSQUARES.get("d5");
-        Config.PIECE_BITBOARDS[1] |= (1L << square); // put a white knight on d5
-        Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[1]; // update total occupancies
-        Config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("b4")); // blocked square (occupied by own piece)
-        Config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("f6")); // blocked square (occupied by own piece)
-        Config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("e3")); // blocked square (occupied by own piece)
-        Config.OCCUPANCIES[1] |= (1L << Config.BOARDSQUARES.get("f4")); // piece to capture
-        Config.OCCUPANCIES[2] |= Config.OCCUPANCIES[1]; // update total occupancies
+        config.PIECE_BITBOARDS[1] |= (1L << square); // put a white knight on d5
+        config.OCCUPANCIES[2] |= config.PIECE_BITBOARDS[1]; // update total occupancies
+        config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("b4")); // blocked square (occupied by own piece)
+        config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("f6")); // blocked square (occupied by own piece)
+        config.OCCUPANCIES[2] |= (1L << Config.BOARDSQUARES.get("e3")); // blocked square (occupied by own piece)
+        config.OCCUPANCIES[1] |= (1L << Config.BOARDSQUARES.get("f4")); // piece to capture
+        config.OCCUPANCIES[2] |= config.OCCUPANCIES[1]; // update total occupancies
         moveList = new ArrayList<>();
-        MoveGenerator.getNonPawnMoves(square, 0, Config.KNIGHT_ATTACKS[square], 1, moveList);
+        MoveGenerator.getNonPawnMoves(square, 0, AttacksGenerator.KNIGHT_ATTACKS[square], 1, moveList);
         Assertions.assertEquals(5, moveList.size());
         expectedList = new ArrayList<>(List.of(
             0b1101010011011,
@@ -114,59 +125,57 @@ public class TestMoveGenerator {
         */ 
         // no castling right
         Assertions.assertFalse(MoveGenerator.canCastle('K', Config.BOARDSQUARES.get("e1"), 1));
+
+        long tempPB = config.PIECE_BITBOARDS[1];
+        long tempPB7 = config.PIECE_BITBOARDS[7];
+        long tempOcc = config.OCCUPANCIES[2];
+
+        // attack f square
+        config.OCCUPANCIES[2] &= ~(3L << 5);  // clear f8 and g8 squares
+        config.PIECE_BITBOARDS[1] |= (1L << Config.BOARDSQUARES.get("e6")); // put a white knight on e6
+        config.OCCUPANCIES[2] |= config.PIECE_BITBOARDS[1]; // update total occupancies
+        config.CASTLING_RIGHT |= Config.CASTLING.get('k');  // Add black kingside castling right
+        Assertions.assertFalse(MoveGenerator.canCastle('k', Config.BOARDSQUARES.get("e8"), 0));
+
+        // occupy g square
+        config.CASTLING_RIGHT |= Config.CASTLING.get('K');  // Add white kingside castling right
+        config.PIECE_BITBOARDS[1] = tempPB;
+        config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("g1")) & ~(1L << Config.BOARDSQUARES.get("f1"));  // clear f1 and occupy g1 squares
+        Assertions.assertFalse(MoveGenerator.canCastle('K', Config.BOARDSQUARES.get("e1"), 1));
+        
         /*
-        * The following checks, while fine, if run with the whole test suite
-        * will unfortunately break other tests, most likely because they modify
-        * Occupancies and PieceBitboards a lot.
-        */
+        queenside castling
+        */ 
+        // can castle queenside
+        config.PIECE_BITBOARDS[1] = tempPB;
+        config.OCCUPANCIES[2] = tempOcc & ~(7L << 1);  // clear b8, c8 and d8 squares
+        config.CASTLING_RIGHT |= Config.CASTLING.get('q');  // Add black kingside castling right
+        Assertions.assertTrue(MoveGenerator.canCastle('q', Config.BOARDSQUARES.get("e8"), 0));
 
-        // long tempPB = Config.PIECE_BITBOARDS[1];
-        // long tempPB7 = Config.PIECE_BITBOARDS[7];
-        // long tempOcc = Config.OCCUPANCIES[2];
+        // no castling right
+        config.CASTLING_RIGHT = 0;
+        Assertions.assertFalse(MoveGenerator.canCastle('q', Config.BOARDSQUARES.get("e8"), 0));
 
-        // // attack f square
-        // Config.OCCUPANCIES[2] &= ~(3L << 5);  // clear f8 and g8 squares
-        // Config.PIECE_BITBOARDS[1] |= (1L << Config.BOARDSQUARES.get("e6")); // put a white knight on e6
-        // Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[1]; // update total occupancies
-        // Config.CASTLING_RIGHT |= Config.CASTLING.get('k');  // Add black kingside castling right
-        // Assertions.assertFalse(MoveGenerator.canCastle('k', Config.BOARDSQUARES.get("e8"), 0));
-
-        // // occupy g square
-        // Config.CASTLING_RIGHT |= Config.CASTLING.get('K');  // Add white kingside castling right
-        // Config.PIECE_BITBOARDS[1] = tempPB;
-        // Config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("g1")) & ~(1L << Config.BOARDSQUARES.get("f1"));  // clear f1 and occupy g1 squares
-        // Assertions.assertFalse(MoveGenerator.canCastle('K', Config.BOARDSQUARES.get("e1"), 1));
+        // attack d square
+        config.OCCUPANCIES[2] = tempOcc & ~(7L << (Config.BOARDSQUARES.get("d1") - 2));  // clear b1, c1 and d1 squares
+        config.PIECE_BITBOARDS[7] |= (1L << Config.BOARDSQUARES.get("c3")); // put a black knight on c3
+        config.OCCUPANCIES[2] |= config.PIECE_BITBOARDS[7]; // update total occupancies
+        config.CASTLING_RIGHT |= Config.CASTLING.get('Q');  // Add white queenside castling right
+        Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
         
-        // /*
-        // queenside castling
-        // */ 
-        // // can castle queenside
-        // Config.PIECE_BITBOARDS[1] = tempPB;
-        // Config.OCCUPANCIES[2] = tempOcc & ~(7L << 1);  // clear b8, c8 and d8 squares
-        // Config.CASTLING_RIGHT |= Config.CASTLING.get('q');  // Add black kingside castling right
-        // Assertions.assertTrue(MoveGenerator.canCastle('q', Config.BOARDSQUARES.get("e8"), 0));
-
-        // // no castling right
-        // Config.CASTLING_RIGHT = 0;
-        // Assertions.assertFalse(MoveGenerator.canCastle('q', Config.BOARDSQUARES.get("e8"), 0));
-
-        // // attack d square
-        // Config.OCCUPANCIES[2] = tempOcc & ~(7L << (Config.BOARDSQUARES.get("d1") - 2));  // clear b1, c1 and d1 squares
-        // Config.PIECE_BITBOARDS[7] |= (1L << Config.BOARDSQUARES.get("c3")); // put a black knight on c3
-        // Config.OCCUPANCIES[2] |= Config.PIECE_BITBOARDS[7]; // update total occupancies
-        // Config.CASTLING_RIGHT |= Config.CASTLING.get('Q');  // Add white queenside castling right
-        // Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
-        
-        // // occupy b square
-        // Config.CASTLING_RIGHT |= Config.CASTLING.get('Q');  // Add white kingside castling right
-        // // Config.PIECE_BITBOARDS[1] = tempPB;
-        // Config.PIECE_BITBOARDS[7] = tempPB7;
-        // Config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("b1")) & ~(3L << Config.BOARDSQUARES.get("c1"));  // clear c1 and d1 squares, and occupy b1
-        // Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
+        // occupy b square
+        config.CASTLING_RIGHT |= Config.CASTLING.get('Q');  // Add white kingside castling right
+        config.PIECE_BITBOARDS[1] = tempPB;
+        config.PIECE_BITBOARDS[7] = tempPB7;
+        config.OCCUPANCIES[2] = tempOcc & (1L << Config.BOARDSQUARES.get("b1")) & ~(3L << Config.BOARDSQUARES.get("c1"));  // clear c1 and d1 squares, and occupy b1
+        Assertions.assertFalse(MoveGenerator.canCastle('Q', Config.BOARDSQUARES.get("e1"), 1));
     }
 
     @Test
     void testGenerateAllMoves() {
+        BoardState boardState = new BoardState(config);
+        Parsers parsers = new Parsers(config, boardState);
+        parsers.parseFEN(Config.START_POSITION);
         ArrayList<Integer> moveList = MoveGenerator.generateMoves();
         ArrayList<Integer> expectedList = new ArrayList<>(List.of(
             // pawn moves

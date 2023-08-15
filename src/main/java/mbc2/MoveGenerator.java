@@ -3,7 +3,15 @@ package mbc2;
 import java.util.ArrayList;
 
 public class MoveGenerator {
-    public static void getNonCapturePawnMoves(
+    public MoveUtils MoveUtils;
+    public Config config;
+
+    public MoveGenerator(MoveUtils MoveUtils, Config Config){
+        this.MoveUtils = MoveUtils;
+        this.config = Config;
+    }
+
+    public void getNonCapturePawnMoves(
         int source,
         int squareOffset,
         int ownColour,
@@ -24,8 +32,8 @@ public class MoveGenerator {
                 - offset +8 if black else -8
         */
         int promotionOffset = (squareOffset == 8) ? 0 : -6;
-        long move = ((1 - (1 & (Config.OCCUPANCIES[2] >> (source + squareOffset)))) *
-                            (Config.PAWN_MOVES_MASKS[ownColour][source] & ~Config.OCCUPANCIES[2]));
+        long move = ((1 - (1 & (this.config.OCCUPANCIES[2] >> (source + squareOffset)))) *
+                            (AttacksGenerator.PAWN_MOVES_MASKS[ownColour][source] & ~this.config.OCCUPANCIES[2]));
         while (move != 0) {
             int target = BitBoard.getLSBIndex(move);
             move &= ~Long.lowestOneBit(move);
@@ -42,7 +50,7 @@ public class MoveGenerator {
                         /* 
                          * We're making a double pawn push.
                          * Shouldn't we update en passant square here (not doing it yet)?
-                         * (config.ENPASSANT_SQUARE = config.SQUARES[target_square - offset])
+                         * (this.config.ENPASSANT_SQUARE = config.SQUARES[target_square - offset])
                          */
                         int encodedMove = MoveCoder.encodeMove(source, target, piece, 0, 0, 1, 0, 0);
                         moveList.add(encodedMove);
@@ -58,7 +66,7 @@ public class MoveGenerator {
         }
     }
 
-    public static void getAllPawnMoves(
+    public void getAllPawnMoves(
         long pawnBitboard,
         int squareOffset,
         int ownColour,
@@ -76,13 +84,13 @@ public class MoveGenerator {
         while (pawnBitboard != 0) {
             int source = BitBoard.getLSBIndex(pawnBitboard);
             pawnBitboard &= ~Long.lowestOneBit(pawnBitboard);
-            long captures = Config.PAWN_ATTACKS[ownColour][source] & Config.OCCUPANCIES[ownColour ^ 1];
+            long captures = AttacksGenerator.PAWN_ATTACKS[ownColour][source] & this.config.OCCUPANCIES[ownColour ^ 1];
             // Check en passant capture
-            if ((Config.ENPASSANT_SQUARE != "no_square") && 
-                (Config.PAWN_ATTACKS[ownColour][source] & 
-                (1L << Config.BOARDSQUARES.get(Config.ENPASSANT_SQUARE))) != 0) {
+            if ((this.config.ENPASSANT_SQUARE != "no_square") && 
+                (AttacksGenerator.PAWN_ATTACKS[ownColour][source] & 
+                (1L << Config.BOARDSQUARES.get(this.config.ENPASSANT_SQUARE))) != 0) {
                     int encodedMove = MoveCoder.encodeMove(source, 
-                                        Config.BOARDSQUARES.get(Config.ENPASSANT_SQUARE), 
+                                        Config.BOARDSQUARES.get(this.config.ENPASSANT_SQUARE), 
                                         piece, 0, 1, 0, 
                                         1, 0);
                     moveList.add(encodedMove);
@@ -109,15 +117,15 @@ public class MoveGenerator {
         }
     }
 
-    public static void getNonPawnMoves(
+    public void getNonPawnMoves(
         int source,
         int ownColour,
         long attacks,
         int piece,
         ArrayList<Integer> moveList
     ) {
-        long nonCaptureMoves = attacks & ~Config.OCCUPANCIES[2];
-        long captureMoves = attacks & Config.OCCUPANCIES[ownColour ^ 1];
+        long nonCaptureMoves = attacks & ~this.config.OCCUPANCIES[2];
+        long captureMoves = attacks & this.config.OCCUPANCIES[ownColour ^ 1];
 
         // Process non-capture moves
         while (nonCaptureMoves != 0) {
@@ -135,7 +143,7 @@ public class MoveGenerator {
         }
     }
 
-    public static boolean canCastle(char castleToSide, int kingPosition, int opponentColour) {
+    public boolean canCastle(char castleToSide, int kingPosition, int opponentColour) {
         /*
          *  :Inputs:
                 - castleToSide = 'K' if white else 'k' for kingside castling and 'Q' or 'q' if queenside
@@ -160,24 +168,24 @@ public class MoveGenerator {
         int squareBesideKing = isKingSide ? kingPosition + 1 : kingPosition - 1;
 
         return (
-            (Config.CASTLING_RIGHT & Config.CASTLING.get(castleToSide)) != 0 && // player has appropriate castling right
-            !MoveUtils.isKingUnderCheck(kingPosition, opponentColour) &&
-            !MoveUtils.isSquareAttacked(squareBesideKing, opponentColour) &&    // king isn't crossing an attacked square
-            ((emptySquares << leftShift) & Config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
+            (this.config.CASTLING_RIGHT & Config.CASTLING.get(castleToSide)) != 0 && // player has appropriate castling right
+            !this.MoveUtils.isKingUnderCheck(kingPosition, opponentColour) &&
+            !this.MoveUtils.isSquareAttacked(squareBesideKing, opponentColour) &&    // king isn't crossing an attacked square
+            ((emptySquares << leftShift) & this.config.OCCUPANCIES[2]) == 0          // squares between the king and the rook are vacant
         );
     }
 
-    public static ArrayList<Integer> generateMoves() {
+    public ArrayList<Integer> generateMoves() {
         /*
          * Generates all moves that can be made by the player
          * whose turn it is to move.
          */
         ArrayList<Integer> moveList = new ArrayList<>();
-        char stm = Config.SIDE_TO_MOVE;
+        char stm = this.config.SIDE_TO_MOVE;
         int ownColour = Config.COLOURS.get(stm);
         // loop over pieces and corresponding bitboards
         for (int idx = 0; idx < 12; idx++) {
-            long bitboard = Config.PIECE_BITBOARDS[idx];
+            long bitboard = this.config.PIECE_BITBOARDS[idx];
             char piece = Config.ASCII_PIECES[idx];
 
             // Handle pawn moves
@@ -198,7 +206,7 @@ public class MoveGenerator {
                     int encodedMove = MoveCoder.encodeMove(
                         Config.BOARDSQUARES.get(String.format("e%d", rank)),
                         Config.BOARDSQUARES.get(String.format("g%d", rank)),
-                        idx, 0, 0, 0, 0, 0
+                        idx, 0, 0, 0, 0, 1
                     );
                     moveList.add(encodedMove);
                 }
@@ -207,7 +215,7 @@ public class MoveGenerator {
                     int encodedMove = MoveCoder.encodeMove(
                         Config.BOARDSQUARES.get(String.format("e%d", rank)),
                         Config.BOARDSQUARES.get(String.format("c%d", rank)),
-                        idx, 0, 0, 0, 0, 0
+                        idx, 0, 0, 0, 0, 1
                     );
                     moveList.add(encodedMove);
                 }
@@ -215,7 +223,7 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
-                    long attacks = Config.KING_ATTACKS[source];
+                    long attacks = AttacksGenerator.KING_ATTACKS[source];
                     getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
@@ -224,7 +232,7 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
-                    long attacks = Config.KNIGHT_ATTACKS[source];
+                    long attacks = AttacksGenerator.KNIGHT_ATTACKS[source];
                     getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
@@ -233,7 +241,7 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
-                    long attacks = AttacksGenerator.getBishopAttacks(source, Config.OCCUPANCIES[2]);
+                    long attacks = AttacksGenerator.getBishopAttacks(source, this.config.OCCUPANCIES[2]);
                     getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
@@ -242,7 +250,7 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
-                    long attacks = AttacksGenerator.getRookAttacks(source, Config.OCCUPANCIES[2]);
+                    long attacks = AttacksGenerator.getRookAttacks(source, this.config.OCCUPANCIES[2]);
                     getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }
@@ -251,7 +259,7 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int source = BitBoard.getLSBIndex(bitboard);
                     bitboard &= ~Long.lowestOneBit(bitboard);
-                    long attacks = AttacksGenerator.getQueenAttacks(source, Config.OCCUPANCIES[2]);
+                    long attacks = AttacksGenerator.getQueenAttacks(source, this.config.OCCUPANCIES[2]);
                     getNonPawnMoves(source, ownColour, attacks, idx, moveList);
                 }
             }

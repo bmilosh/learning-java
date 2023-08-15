@@ -2,12 +2,34 @@ package mbc2;
 
 public class MoveCoder {
     /*
-    *  ################################################
+    *   ################################################
         ##                                            ##
         ##               Move Encoding                ##
         ##                                            ##
         ################################################
+
+
+            binary move bits                               hexadecimal constants
+        
+        0000 0000 0000 0000 0011 1111    source square       0x3f
+        0000 0000 0000 1111 1100 0000    target square       0xfc0
+        0000 0000 1111 0000 0000 0000    piece               0xf000
+        0000 1111 0000 0000 0000 0000    promoted piece      0xf0000
+        0001 0000 0000 0000 0000 0000    capture flag        0x100000
+        0010 0000 0000 0000 0000 0000    double push flag    0x200000
+        0100 0000 0000 0000 0000 0000    enpassant flag      0x400000
+        1000 0000 0000 0000 0000 0000    castling flag       0x800000
     */
+
+    public static int SOURCE_SQUARE_MASK = 0x3f;
+    public static int TARGET_SQUARE_MASK = 0xfc0;
+    public static int MOVING_PIECE_MASK = 0xf000;
+    public static int PROMOTED_PIECE_MASK = 0xf0000;
+    public static int CAPTURE_MASK = 0x100000;
+    public static int DOUBLE_PAWN_PUSH_MASK = 0x200000;
+    public static int EN_PASSANT_MASK = 0x400000;
+    public static int CASTLING_MASK = 0x800000;
+
     private static void sanitiseMove(
         int moveSource,     // between 0 and 63
         int moveTarget,     // between 0 and 63
@@ -70,34 +92,34 @@ public class MoveCoder {
     */
 
     public static int getSourceSquare(int encodedMove) {
-        return encodedMove & Config.SOURCE_SQUARE_MASK;
+        return encodedMove & SOURCE_SQUARE_MASK;
     }
 
     public static int getTargetSquare(int encodedMove) {
-        return (encodedMove & Config.TARGET_SQUARE_MASK) >> 6;
+        return (encodedMove & TARGET_SQUARE_MASK) >> 6;
     }
 
     public static int getMovingPiece(int encodedMove) {
-        return (encodedMove & Config.MOVING_PIECE_MASK) >> 12;
+        return (encodedMove & MOVING_PIECE_MASK) >> 12;
     }
 
     public static int getPromotedPiece(int encodedMove) {
-        return (encodedMove & Config.PROMOTED_PIECE_MASK) >> 16;
+        return (encodedMove & PROMOTED_PIECE_MASK) >> 16;
     }
 
     public static int getCaptureFlag(int encodedMove) {
-        return (encodedMove & Config.CAPTURE_MASK) >> 20;
+        return (encodedMove & CAPTURE_MASK) >> 20;
     }
 
     public static int getDPPFlag(int encodedMove) {
-        return (encodedMove & Config.DOUBLE_PAWN_PUSH_MASK) >> 21;
+        return (encodedMove & DOUBLE_PAWN_PUSH_MASK) >> 21;
     }
 
     public static int getEnPassantFlag(int encodedMove) {
-        return (encodedMove & Config.EN_PASSANT_MASK) >> 22;
+        return (encodedMove & EN_PASSANT_MASK) >> 22;
     }
 
     public static int getCastlingFlag(int encodedMove) {
-        return (encodedMove & Config.CASTLING_MASK) >> 23;
+        return (encodedMove & CASTLING_MASK) >> 23;
     }
 }

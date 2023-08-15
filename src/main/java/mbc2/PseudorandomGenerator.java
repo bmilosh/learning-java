@@ -1,7 +1,8 @@
 package mbc2;
 
 public class PseudorandomGenerator {
-    public static long generateRandom32bitNumber() {
+    // private Config Config = new Config();
+    public static long generateRandom32bitNumber(Config Config) {
         /*
          * Uses the XOR algorithm
          */
@@ -15,13 +16,13 @@ public class PseudorandomGenerator {
         return  temp; 
     }
 
-    public static long generateRandom64bitNumber() {
+    public static long generateRandom64bitNumber(Config Config) {
         long n1, n2, n3, n4;
 
-        n1 = (long) generateRandom32bitNumber() & 0xFFFFL;
-        n2 = (long) generateRandom32bitNumber() & 0xFFFFL;
-        n3 = (long) generateRandom32bitNumber() & 0xFFFFL;
-        n4 = (long) generateRandom32bitNumber() & 0xFFFFL;
+        n1 = (long) generateRandom32bitNumber(Config) & 0xFFFFL;
+        n2 = (long) generateRandom32bitNumber(Config) & 0xFFFFL;
+        n3 = (long) generateRandom32bitNumber(Config) & 0xFFFFL;
+        n4 = (long) generateRandom32bitNumber(Config) & 0xFFFFL;
 
         return n1 | (n2 << 16) | (n3 << 32) | (n4 << 48);
     }
