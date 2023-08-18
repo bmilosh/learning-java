@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import mbc2.BoardState;
 import mbc2.Config;
 import mbc2.EngineInitMethods;
+import mbc2.MoveCoder;
 import mbc2.Parsers;
 
 public class TestParsers {
@@ -17,7 +18,6 @@ public class TestParsers {
         config = new Config();
         BoardState = new BoardState(config);
         Parsers = new Parsers(config, BoardState);
-        // EngineInitMethods EngineInitMethods = new EngineInitMethods(Config);
         EngineInitMethods.initAll();
     }
 
@@ -148,4 +148,321 @@ public class TestParsers {
         Assertions.assertEquals('w', config.SIDE_TO_MOVE);
         Assertions.assertEquals("no_square", config.ENPASSANT_SQUARE);
     }
+
+    @Test
+    void testParseCorrectMove() {
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("e2"),
+            Config.BOARDSQUARES.get("e4"),
+            Config.PIECES.get('P'),
+            0, 0, 1, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("e2e4"));
+
+        move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("g1"),
+            Config.BOARDSQUARES.get("h3"),
+            Config.PIECES.get('N'),
+            0, 0, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("g1h3"));
+
+        move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("a2"),
+            Config.BOARDSQUARES.get("a3"),
+            Config.PIECES.get('P'),
+            0, 0, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("a2a3"));
+
+    }
+
+    @Test
+    void testParseMoveFromCustomPosition() {
+        /*
+         * Parse move from position different from start position
+         */
+        // r4rk1/1pp1qppp/p1np1n2/2b1N1B1/2B1P1b1/P1NP4/1PP1QPPP/R4RK1 b - - 0 11
+        Parsers.parseFEN("r4rk1/1pp1qppp/p1np1n2/2b1N1B1/2B1P1b1/P1NP4/1PP1QPPP/R4RK1 b - - 0 11");
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("g4"),
+            Config.BOARDSQUARES.get("e2"),
+            Config.PIECES.get('b'),
+            0, 1, 0, 0, 0
+        );
+
+        // r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P3/P1NP1b2/1PP1QP1P/R4RK1 w - - 0 10
+        Parsers.parseFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P3/P1NP1b2/1PP1QP1P/R4RK1 w - - 0 10");
+        move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("e2"),
+            Config.BOARDSQUARES.get("f3"),
+            Config.PIECES.get('Q'),
+            0, 1, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("e2f3"));
+
+        // Test promotions
+        Parsers.parseFEN(Config.KILLER_POSITION);
+        move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("g7"),
+            Config.BOARDSQUARES.get("g8"),
+            Config.PIECES.get('P'),
+            Config.PIECES.get('B'), 0, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("g7g8b"));
+        
+        move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("g7"),
+            Config.BOARDSQUARES.get("h8"),
+            Config.PIECES.get('P'),
+            Config.PIECES.get('Q'), 1, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("g7h8q"));
+        
+        // Test en passant
+        move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("f5"),
+            Config.BOARDSQUARES.get("e6"),
+            Config.PIECES.get('P'),
+            0, 1, 0, 1, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("f5e6"));
+    }
+
+    @Test
+    void testParseIncorrectMovesRightSideInvalidTargetSquare() {
+        // Invalid moves should throw IllegalArgumentException
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Right side, invalid square
+                        Parsers.parseMove("d2d5");
+                    }, 
+                    "Invalid move: d2d5");
+    }
+
+    @Test
+    void testParseIncorrectMovesWrongSide() {
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Wrong side to move
+                        Parsers.parseMove("h7h6");
+                    }, 
+                    "Invalid move: h7h6");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Wrong side to move
+                        Parsers.parseMove("b8a6");
+                    }, 
+                    "Invalid move: b8a6");
+    }
+
+    @Test
+    void testParseIncorrectMoveWrongFormat() {
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid move
+                        Parsers.parseMove("gh1");
+                    }, 
+                    "Invalid move: gh1");
+        
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid promotion piece
+                        Parsers.parseMove("a7a8u");
+                    }, 
+                    "Invalid move: a7a8u");
+    }
+
+    @Test
+    void testParseIncorrectMoveEmptySquare() {        
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Moving from empty square
+                        Parsers.parseMove("a5a6");
+                    }, 
+                    "Invalid move: a5a6");
+
+    }
+
+    @Test
+    void testParsePawnMoveCapture() {
+        Parsers.parseFEN(Config.TRICKY_POSITION);
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("d5"),
+            Config.BOARDSQUARES.get("e6"),
+            Config.PIECES.get('P'),
+            0, 1, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("d5e6"));
+    }
+
+    @Test
+    void testParseIncorrectKnightMove() {
+        Parsers.parseFEN("rnbqkbnr/ppppp1pp/8/8/8/5p1P/PPPPPPP1/RNBQKBNR w KQkq - 0 1 ");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Occupied by friendly piece
+                        Parsers.parseMove("g1h3");
+                    }, 
+                    "Invalid move: g1h3");
+         Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Not a move a knight can make
+                        Parsers.parseMove("b1d3");
+                    }, 
+                    "Invalid move: b1d3");
+   }
+
+    @Test
+    void testParseCorrectKnightMove() {
+        Parsers.parseFEN("rnbqkbnr/ppppp1pp/8/8/8/5p1P/PPPPPPP1/RNBQKBNR w KQkq - 0 1 ");
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("g1"),
+            Config.BOARDSQUARES.get("f3"),
+            Config.PIECES.get('N'),
+            0, 1, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("g1f3"));
+
+   }
+
+    @Test
+    void testParseIncorrectBishopMove() {
+        Parsers.parseFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 b - - 0 10");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Occupied by friendly piece
+                        Parsers.parseMove("c5d6");
+                    }, 
+                    "Invalid move: c5d6");
+         Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Not a move a bishop can make
+                        Parsers.parseMove("c5a5");
+                    }, 
+                    "Invalid move: c5a5");
+   }
+
+    @Test
+    void testParseCorrectBishopMove() {
+        Parsers.parseFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 b - - 0 10");
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("c5"),
+            Config.BOARDSQUARES.get("f2"),
+            Config.PIECES.get('b'),
+            0, 1, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("c5f2"));
+
+   }
+
+    @Test
+    void testParseIncorrectRookMove() {
+        Parsers.parseFEN(Config.PERFT_POSITION_6);
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Occupied by friendly piece
+                        Parsers.parseMove("f1f2");
+                    }, 
+                    "Invalid move: f1f2");
+         Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Not a move a rook can make
+                        Parsers.parseMove("f1h3");
+                    }, 
+                    "Invalid move: f1h3");
+   }
+
+    @Test
+    void testParseCorrectRookMove() {
+        Parsers.parseFEN(Config.PERFT_POSITION_6);
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("a1"),
+            Config.BOARDSQUARES.get("d1"),
+            Config.PIECES.get('R'),
+            0, 0, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("a1d1"));
+   }
+
+    @Test
+    void testParseIncorrectQueenMove() {
+        Parsers.parseFEN(Config.PERFT_POSITION_6);
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Occupied by friendly piece
+                        Parsers.parseMove("e2c2");
+                    }, 
+                    "Invalid move: e2c2");
+         Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Not a move a queen can make
+                        Parsers.parseMove("e2d6");
+                    }, 
+                    "Invalid move: e2d6");
+   }
+
+    @Test
+    void testParseCorrectQueenMove() {
+        Parsers.parseFEN(Config.PERFT_POSITION_6);
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("e2"),
+            Config.BOARDSQUARES.get("d1"),
+            Config.PIECES.get('Q'),
+            0, 0, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("e2d1"));
+   }
+
+    @Test
+    void testParseIncorrectKingMove() {
+        Parsers.parseFEN(Config.PERFT_POSITION_6);
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Occupied by friendly piece
+                        Parsers.parseMove("g1g2");
+                    }, 
+                    "Invalid move: g1g2");
+         Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Not a move a king can make
+                        Parsers.parseMove("g1f6");
+                    }, 
+                    "Invalid move: g1f6");
+   }
+
+    @Test
+    void testParseCorrectKingMove() {
+        Parsers.parseFEN(Config.PERFT_POSITION_6);
+        int move = MoveCoder.encodeMove(
+            Config.BOARDSQUARES.get("g1"),
+            Config.BOARDSQUARES.get("h1"),
+            Config.PIECES.get('K'),
+            0, 0, 0, 0, 0
+        );
+        Assertions.assertEquals(move, Parsers.parseMove("g1h1"));
+   }
+
+    // @Test
+    // void testParseIncorrectMoveKingIntoCheck() {
+            // Not necessary. We enforce this when making the move, not when parsing.
+    //     // r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P3/P1NP1b2/1PP1QP1P/R4RK1 w - - 0 10
+    //     Parsers.parseFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P3/P1NP1b2/1PP1QP1P/R4RK1 w - - 0 10");
+       
+    //     // Invalid moves should throw IllegalArgumentException
+    //     Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+    //                 () -> {
+    //                     // Move king to attacked square (moving into check)
+    //                     Parsers.parseMove("g1h1");
+    //                 }, 
+    //                 "Invalid move: g1h1");
+
+    //     Parsers.parseFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P3/P1NP4/1PP1QP1P/R4RK1 w - - 0 10");
+    //     Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+    //                 () -> {
+    //                     // Move pawn protecting king from bishop attack (moving into check)
+    //                     Parsers.parseMove("f2f3");
+    //                 }, 
+    //                 "Invalid move: f2f3");
+    // }
 }

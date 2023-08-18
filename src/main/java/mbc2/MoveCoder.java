@@ -96,30 +96,30 @@ public class MoveCoder {
     }
 
     public static int getTargetSquare(int encodedMove) {
-        return (encodedMove & TARGET_SQUARE_MASK) >> 6;
+        return (encodedMove & TARGET_SQUARE_MASK) >>> 6;
     }
 
     public static int getMovingPiece(int encodedMove) {
-        return (encodedMove & MOVING_PIECE_MASK) >> 12;
+        return (encodedMove & MOVING_PIECE_MASK) >>> 12;
     }
 
     public static int getPromotedPiece(int encodedMove) {
-        return (encodedMove & PROMOTED_PIECE_MASK) >> 16;
+        return (encodedMove & PROMOTED_PIECE_MASK) >>> 16;
     }
 
     public static int getCaptureFlag(int encodedMove) {
-        return (encodedMove & CAPTURE_MASK) >> 20;
+        return (encodedMove & CAPTURE_MASK) >>> 20;
     }
 
     public static int getDPPFlag(int encodedMove) {
-        return (encodedMove & DOUBLE_PAWN_PUSH_MASK) >> 21;
+        return (encodedMove & DOUBLE_PAWN_PUSH_MASK) >>> 21;
     }
 
     public static int getEnPassantFlag(int encodedMove) {
-        return (encodedMove & EN_PASSANT_MASK) >> 22;
+        return (encodedMove & EN_PASSANT_MASK) >>> 22;
     }
 
     public static int getCastlingFlag(int encodedMove) {
-        return (encodedMove & CASTLING_MASK) >> 23;
+        return (encodedMove & CASTLING_MASK) >>> 23;
     }
 }

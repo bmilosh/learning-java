@@ -32,7 +32,7 @@ public class MoveGenerator {
                 - offset +8 if black else -8
         */
         int promotionOffset = (squareOffset == 8) ? 0 : -6;
-        long move = ((1 - (1 & (this.config.OCCUPANCIES[2] >> (source + squareOffset)))) *
+        long move = ((1 - (1 & (this.config.OCCUPANCIES[2] >>> (source + squareOffset)))) *
                             (AttacksGenerator.PAWN_MOVES_MASKS[ownColour][source] & ~this.config.OCCUPANCIES[2]));
         while (move != 0) {
             int target = BitBoard.getLSBIndex(move);

@@ -61,7 +61,7 @@ public class TestEngineInitMethods {
          * 4. Set occupancy_index to be 1L << relevant_bit_count
          * 5. Pick index in range(occupancy_index) 
          * 6. Set occupancy to be OccupancySetter(index, relevant_bit_count, attack_mask)
-         * 7. Generate magic_index: (int) ((((occupancy * magicCandidate) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL)
+         * 7. Generate magic_index: (int) ((((occupancy * magicCandidate) & 0xFFFFFFFFFFFFFFFFL) >>> (64 - numberOfSetBits)) & 0xFFFFFFFFL)
          * 8. Attack for the piece on that square and with that magic_index should be piece_attack_on_the_fly(square, occupancy)
          */
         
@@ -72,13 +72,13 @@ public class TestEngineInitMethods {
         int numberOfSetBits = Long.bitCount(attackMask);
         int index = 33;
         long occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
-        int magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+        int magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >>> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
         long expected = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
         assertEquals(expected, AttacksGenerator.ROOK_ATTACKS[square][magicIndex]);
 
         index = 41;
         occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
-        magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+        magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >>> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
         expected = AttacksGenerator.getRookAttacksOnTheFly(square, occupancy);
         assertEquals(expected, AttacksGenerator.ROOK_ATTACKS[square][magicIndex]);
 
@@ -89,7 +89,7 @@ public class TestEngineInitMethods {
         numberOfSetBits = Long.bitCount(attackMask);
         index = 9;
         occupancy = OccupancySetter.run(index, numberOfSetBits, attackMask);
-        magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
+        magicIndex = (int) ((((occupancy * magicNumber) & 0xFFFFFFFFFFFFFFFFL) >>> (64 - numberOfSetBits)) & 0xFFFFFFFFL);
         expected = AttacksGenerator.getBishopAttacksOnTheFly(square, occupancy);
         assertEquals(expected, AttacksGenerator.BISHOP_ATTACKS[square][magicIndex]);
     }

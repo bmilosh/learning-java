@@ -9,7 +9,7 @@ public class PseudorandomGenerator {
         long temp = Config.PSEUDORANDOM_NUMBER_STATE;
         
         temp ^=  (temp << 13) & 0xFFFFFFFFL;
-        temp ^= temp >> 17;
+        temp ^= temp >>> 17;
         temp ^=  (temp << 5) & 0xFFFFFFFFL;
 
         Config.PSEUDORANDOM_NUMBER_STATE =  temp;
