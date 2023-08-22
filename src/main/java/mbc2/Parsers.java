@@ -1,13 +1,19 @@
 package mbc2;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Parsers {
     private Config config;
     private BoardState boardState;
-    // private MoveUtils MoveUtils = new MoveUtils(config);
+    private MoveGenerator moveGen;
+    private MoveUtils moveUtils;
 
-    public Parsers(Config Config, BoardState boardState) {
+    public Parsers(Config Config, BoardState boardState, MoveGenerator moveGen, MoveUtils moveUtils) {
         this.config = Config;
         this.boardState = boardState;
+        this.moveGen = moveGen;
+        this.moveUtils = moveUtils;
     }
 
     public void parseFEN(String fenString) {
@@ -18,9 +24,10 @@ public class Parsers {
         String[] FENToList = fenString.split(" ");
         // sanitise FEN
         if ((FENToList.length < 4) || (FENToList.length > 6)) {
-            System.out.println("!!!!!!!!!!!!!Invalid FEN string!!!!!!!!!!!!!");
-            System.out.println(fenString);
-            return;
+            // System.out.println("!!!!!!!!!!!!!Invalid FEN string!!!!!!!!!!!!!");
+            // System.out.println(fenString);
+            // return;
+            throw new IllegalArgumentException("!!!!!!!!!!!!!Invalid FEN string!!!!!!!!!!!!!");
         }
 
         /*
@@ -61,24 +68,24 @@ public class Parsers {
             } else if (piece == '/') {
                 index++;
             } else {
-                System.out.printf("!!!!! INVALID FEN CHARACTER IN SQUARE REPRESENTATION: %s !!!!!\n", piece);
                 boardState.restoreBoardState();
-                return;
+                throw new IllegalArgumentException(String.format("!!!!! INVALID FEN CHARACTER IN SQUARE REPRESENTATION: %s !!!!!\n", piece));
+                // return;
             }
 
             if ((index == position.length()) && square != 64) {
-                System.out.printf("!!!!! INVALID FEN: \"%s\". WRONG NUMBER OF SQUARES !!!!!\n", fenString);
                 boardState.restoreBoardState();
-                return;
+                throw new IllegalArgumentException(String.format("!!!!! INVALID FEN: \"%s\". WRONG NUMBER OF SQUARES !!!!!\n", fenString));
+                // return;
             }
         }
 
         // Parse sideToMove
         char stm = FENToList[1].charAt(0);
         if (stm != 'w' && stm != 'b') {
-            System.out.printf("!!!!! INVALID FEN CHARACTER IN SIDE-TO-MOVE REPRESENTATION: %s !!!!!\n", stm);
             boardState.restoreBoardState();
-            return;
+            throw new IllegalArgumentException(String.format("!!!!! INVALID FEN CHARACTER IN SIDE-TO-MOVE REPRESENTATION: %s !!!!!\n", stm));
+            // return;
         }
         this.config.SIDE_TO_MOVE = stm;
 
@@ -92,31 +99,31 @@ public class Parsers {
                         this.config.CASTLING_RIGHT |= Config.CASTLING.get(right);
                 }
                 else {
-                    System.out.printf("!!!!! INVALID FEN STRING. CASTLING-RIGHTS REPRESENTATION IS INCORRECT: %S !!!!!\n", castlingRights);
                     boardState.restoreBoardState();
-                    return;
+                    throw new IllegalArgumentException(String.format("!!!!! INVALID FEN STRING. CASTLING-RIGHTS REPRESENTATION IS INCORRECT: %S !!!!!\n", castlingRights));
+                    // return;
                 }
 
             }
         } else if (castlingRights.length() > 4) {
-            System.out.printf("!!!!! INVALID FEN STRING. CASTLING-RIGHTS REPRESENTATION SHOULD BE OF LENGTH AT MOST 4: %S !!!!!\n", castlingRights);
             boardState.restoreBoardState();
-            return;
+            throw new IllegalArgumentException(String.format("!!!!! INVALID FEN STRING. CASTLING-RIGHTS REPRESENTATION SHOULD BE OF LENGTH AT MOST 4: %S !!!!!\n", castlingRights));
+            // return;
         }
 
         // Parse en passant square
         String enp = FENToList[3];
         if (!enp.equals("-") && enp.length() == 2) {
             if (!Config.BOARDSQUARES.containsKey(enp.toLowerCase())) {
-                System.out.printf("!!!!! INVALID EN PASSANT REPRESENTATION IN FEN STRING: %s !!!!!\n", enp);
                 boardState.restoreBoardState();
-                return;
+                throw new IllegalArgumentException(String.format("!!!!! INVALID EN PASSANT REPRESENTATION IN FEN STRING: %s !!!!!\n", enp));
+                // return;
             }
             this.config.ENPASSANT_SQUARE = enp.toLowerCase();
         } else if (!enp.equals("-") && enp.length() != 2) {
-            System.out.printf("!!!!! INVALID EN PASSANT REPRESENTATION IN FEN STRING: %s !!!!!\n", enp);
             boardState.restoreBoardState();
-            return;
+            throw new IllegalArgumentException(String.format("!!!!! INVALID EN PASSANT REPRESENTATION IN FEN STRING: %s !!!!!\n", enp));
+            // return;
         }
 
         // Set occupancies for white and black pieces
@@ -128,7 +135,137 @@ public class Parsers {
         // Set occupancies for all pieces
         this.config.OCCUPANCIES[2] = this.config.OCCUPANCIES[0] | this.config.OCCUPANCIES[1];
 
+        // Sanitise move count (if available)
+        if (FENToList.length > 4 && 
+            (!FENToList[4].matches("\\d+") || !FENToList[FENToList.length - 1].matches("\\d+"))) {
+                boardState.restoreBoardState();
+                throw new IllegalArgumentException(String.format("!!!!! INVALID MOVE COUNT REPRESENTATION IN FEN STRING: %s !!!!!\n", FENToList[FENToList.length - 1] + " and/or " + FENToList[4]));
+                // return;
+            }
+
     }
+
+    public void parseGo(String command) {
+        // Start by splitting the entered command
+        String[] commandList = command.split(" ");
+
+        // init depth
+        int depth = -1;
+
+        // Pointer to walk through the command list
+        int pointer = 1;
+        while (pointer < commandList.length) {
+            String cmnd = commandList[pointer];
+
+            if (cmnd.equals("depth")) {
+                try {
+                    depth = Integer.parseInt(commandList[pointer + 1]);
+                } catch (Exception e) {
+                    // TODO: handle exception
+                    depth = 6;
+                }
+            }
+            // else depth = 6;
+            pointer++;
+        }
+        depth = depth < 0 ? 6 : depth;
+        System.out.println("depth is: " + depth);
+    }
+
+    public void parsePosition(String command) {
+        /*
+        *   Parses the UCI Protocol 'position' command
+
+            Examples:
+                - position startpos
+                - position startpos moves e2e4 e7e5
+                - position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
+                - position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 moves e2a6 e8g8
+
+        */
+        // Start by splitting the entered command
+        String[] commandList = command.split(" ");
+        if (commandList.length < 2) {
+            throw new IllegalArgumentException(String.format("Invalid command (insufficient words): %s", command));
+        }
+        
+        int moveCommandPos = 2;
+
+        switch (commandList[1].toLowerCase()) {
+            case "startpos":
+                parseFEN(Config.START_POSITION);
+                // foundStart = true;
+                break;
+            case "fen":
+                List<String> FEN = new ArrayList<>();
+                while (moveCommandPos < commandList.length && moveCommandPos < 10) {
+                    String current = commandList[moveCommandPos];
+                    if (current.toLowerCase().equals("moves")) {
+                        // foundFEN = true;
+                        break;
+                    }
+                    FEN.add(current);
+                    moveCommandPos++;
+                }
+                try {
+                    parseFEN(String.join(" ", FEN));
+                    // foundFEN = true;
+                } catch (IllegalArgumentException e) {
+                    throw e;
+                }
+                // parseFEN(String.join(" ", FEN));
+                break;
+                
+            default:
+                throw new IllegalArgumentException(String.format("Invalid command: %s", commandList[1]));
+        }
+        // Get the moves, if any
+        if (moveCommandPos != commandList.length) { //  && !commandList[moveCommandPos].toLowerCase().equals("moves")
+            if (!commandList[moveCommandPos].toLowerCase().equals("moves")) {
+                // Invalid command was passed
+                throw new IllegalArgumentException(String.format("Invalid command: %s", command));
+            }
+            moveCommandPos++;
+            // We have moves
+            while (moveCommandPos < commandList.length) {
+                String move = commandList[moveCommandPos];
+                System.out.println(move);
+                try {
+                    int encodedMove = parseMove(move);
+                    this.moveUtils.makeMove(encodedMove, false);
+                    moveCommandPos++;
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException(String.format("Invalid command: %s", command));
+                    // throw e;
+                }
+            }
+        }
+    }
+
+    /**
+     * ParseMoveHelper
+     */
+    public class ParseMoveHelper {
+    
+        public Object[] run(long attacks, int target, int ownColour) {
+            boolean illegal = false;
+            int capture = 0;
+            if (BitBoard.getBitAtIndex(attacks, target) != 0) {
+                // Valid move by chess piece
+                if (BitBoard.getBitAtIndex(config.OCCUPANCIES[2], target) != 0) {
+                    // Target square is occupied
+                    if (BitBoard.getBitAtIndex(config.OCCUPANCIES[ownColour], target) != 0) {
+                        // Occupied by a friendly piece
+                        illegal = true;
+                    } else capture = 1;
+                }
+            }
+            // Invalid rook move
+            else illegal = true;
+            return new Object[] {illegal, capture};
+        }
+    }
+    ParseMoveHelper ParseMoveHelper = new ParseMoveHelper();
 
     public int parseMove(String moveString) {
         /*
@@ -233,13 +370,12 @@ public class Parsers {
                 // Start the checks
                 if (isPawnPush) {
                     // if (!isCapture && !isEnPassant) {
-                    if ((1 - (1 & (this.config.OCCUPANCIES[2] >>> source + pawnOffset))) == 0) {
+                    if ((1 - (1 & (this.config.OCCUPANCIES[2] >> source + pawnOffset))) == 0) {
                         /*
-                            * square just ahead of source square isn't empty ==> illegal move.
-                            * target square not in the appropriate distance from source square
-                            * for a pawn push ==> illegal move.
-                            */
-                        // throw new IllegalArgumentException(String.format("Invalid move: %s", moveString));
+                        * square just ahead of source square isn't empty ==> illegal move.
+                        * target square not in the appropriate distance from source square
+                        * for a pawn push ==> illegal move.
+                        */
                         illegalMove = true;
                         break pieceSwitch;
                     }
@@ -249,7 +385,6 @@ public class Parsers {
                     if ((target < 8 || (target >= 56 && target < 64)) && promotedPiece == -1) {
                         // We should be promoting, but the piece we're promoting
                         // to wasn't specified ==> illegal move
-                        // throw new IllegalArgumentException(String.format("Invalid move: %s", moveString));
                         illegalMove = true;
                         break pieceSwitch;
                     }
@@ -280,56 +415,45 @@ public class Parsers {
                 
                 break;
             case 'n':
-                res = InnerParsers.run( 
+                res = ParseMoveHelper.run( 
                             AttacksGenerator.KNIGHT_ATTACKS[source], 
-                            target, ownColour, this.config);
+                            target, ownColour);
                 illegalMove = (boolean) res[0];
                 capture = (int) res[1];
-                // if (BitBoard.getBitAtIndex(AttacksGenerator.KNIGHT_ATTACKS[source], target) != 0) {
-                //     if (BitBoard.getBitAtIndex(this.config.OCCUPANCIES[2], target) != 0) {
-                //         // Target square is occupied
-                //         if (BitBoard.getBitAtIndex(this.config.OCCUPANCIES[ownColour], target) != 0) {
-                //             // Occupied by a friendly piece
-                //             illegalMove = true;
-                //         } else capture = 1;
-                //     }
-                // }
-                // // Invalid knight move
-                // else illegalMove = true;
                 break;
             case 'b':
-                res = InnerParsers.run( 
+                res = ParseMoveHelper.run( 
                             AttacksGenerator.getBishopAttacks(source, this.config.OCCUPANCIES[2]), 
-                            target, ownColour, this.config);
+                            target, ownColour);
                 illegalMove = (boolean) res[0];
                 capture = (int) res[1];
                 
                 break;
             case 'r':
-                res = InnerParsers.run( 
+                res = ParseMoveHelper.run( 
                             AttacksGenerator.getRookAttacks(source, this.config.OCCUPANCIES[2]), 
-                            target, ownColour, this.config);
+                            target, ownColour);
                 illegalMove = (boolean) res[0];
                 capture = (int) res[1];
                 
                 break;
             case 'q':
-                res = InnerParsers.run( 
+                res = ParseMoveHelper.run( 
                             AttacksGenerator.getQueenAttacks(source, this.config.OCCUPANCIES[2]), 
-                            target, ownColour, this.config);
+                            target, ownColour);
                 illegalMove = (boolean) res[0];
                 capture = (int) res[1];
                 
                 break;
         
             default: // 'k'
-                MoveUtils MoveUtils = new MoveUtils(this.config);
-                MoveGenerator moveGen = new MoveGenerator(MoveUtils, this.config);
+                // MoveUtils MoveUtils = new MoveUtils(this.config);
+                // MoveGenerator moveGen = new MoveGenerator(MoveUtils, this.config);
                 char king = this.config.SIDE_TO_MOVE == 'w' ? 'K' : 'k';
                 char queen = this.config.SIDE_TO_MOVE == 'w' ? 'Q' : 'q';
                 // Check ability to castle
-                boolean canCastleKS = moveGen.canCastle(king, source, ownColour ^ 1);
-                boolean canCastleQS = moveGen.canCastle(queen, source, ownColour ^ 1);
+                boolean canCastleKS = this.moveGen.canCastle(king, source, ownColour ^ 1);
+                boolean canCastleQS = this.moveGen.canCastle(queen, source, ownColour ^ 1);
                 // Check regular king move
                 if (BitBoard.getBitAtIndex(AttacksGenerator.KING_ATTACKS[source], target) != 0) {
                     if (BitBoard.getBitAtIndex(this.config.OCCUPANCIES[2], target) != 0) {
@@ -362,29 +486,5 @@ public class Parsers {
         promotedPiece = promotedPiece == -1 ? 0 : promotedPiece;
 
         return MoveCoder.encodeMove(source, target, movingPiece, promotedPiece, capture, doublePP, enPassant, castling);
-    }
-
-    /**
-     * InnerParsers
-     */
-    public class InnerParsers {
-    
-        public static Object[] run(long attacks, int target, int ownColour, Config config) {
-            boolean illegal = false;
-            int capture = 0;
-            if (BitBoard.getBitAtIndex(attacks, target) != 0) {
-                // Valid move by chess piece
-                if (BitBoard.getBitAtIndex(config.OCCUPANCIES[2], target) != 0) {
-                    // Target square is occupied
-                    if (BitBoard.getBitAtIndex(config.OCCUPANCIES[ownColour], target) != 0) {
-                        // Occupied by a friendly piece
-                        illegal = true;
-                    } else capture = 1;
-                }
-            }
-            // Invalid rook move
-            else illegal = true;
-            return new Object[] {illegal, capture};
-        }
     }
 }

@@ -174,7 +174,7 @@ public class TestMoveGenerator {
     @Test
     void testGenerateAllMoves() {
         BoardState boardState = new BoardState(config);
-        Parsers parsers = new Parsers(config, boardState);
+        Parsers parsers = new Parsers(config, boardState, MoveGenerator, MoveUtils);
         parsers.parseFEN(Config.START_POSITION);
         ArrayList<Integer> moveList = MoveGenerator.generateMoves();
         ArrayList<Integer> expectedList = new ArrayList<>(List.of(

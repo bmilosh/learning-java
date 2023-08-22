@@ -6,6 +6,8 @@ import mbc2.BoardState;
 import mbc2.Config;
 import mbc2.EngineInitMethods;
 import mbc2.MoveCoder;
+import mbc2.MoveGenerator;
+import mbc2.MoveUtils;
 import mbc2.Parsers;
 
 public class TestParsers {
@@ -13,14 +15,24 @@ public class TestParsers {
     private static Config config;
     private static Parsers Parsers;
     private static BoardState BoardState;
+    private static MoveUtils moveUtils;
+    private static MoveGenerator moveGenerator;
     @BeforeEach
     void setup() {
         config = new Config();
         BoardState = new BoardState(config);
-        Parsers = new Parsers(config, BoardState);
+        moveGenerator = new MoveGenerator(moveUtils, config);
+        Parsers = new Parsers(config, BoardState, moveGenerator, moveUtils);
         EngineInitMethods.initAll();
     }
 
+    /*
+     *  ################################################
+        ##                                            ##
+        ##                Parse FEN                   ##
+        ##                                            ##
+        ################################################
+     */
     @Test
     void testParseFEN() {
         // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 "
@@ -100,9 +112,22 @@ public class TestParsers {
         long blackPawns = config.PIECE_BITBOARDS[6];
         // "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
 
-        // Invalid FEN: Contains invalid character 'T'
-        Parsers.parseFEN("rnbqkT1r/pp1p1pPp/8/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
-        
+        // Invalid FEN: Missing items
+        // Parsers.parseFEN("rnbqkT1r/pp1p1pPp/8/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR KQkq e6 ");
+        // // Invalid FEN: Contains invalid character 'T'
+        // Parsers.parseFEN("rnbqkT1r/pp1p1pPp/8/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid FEN: Missing items
+                        Parsers.parseFEN("rnbqkT1r/pp1p1pPp/8/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR KQkq e6 ");
+                    }, 
+                    "Invalid move: d2d5");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid FEN: Contains invalid character 'T'
+                        Parsers.parseFEN("rnbqkT1r/pp1p1pPp/8/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
+                    }, 
+                    "Invalid move: d2d5");
         Assertions.assertEquals(0, config.CASTLING_RIGHT);
         Assertions.assertEquals(whitePieces, config.OCCUPANCIES[0]);
         Assertions.assertEquals(blackPieces, config.OCCUPANCIES[1]);
@@ -113,7 +138,12 @@ public class TestParsers {
         Assertions.assertEquals("no_square", config.ENPASSANT_SQUARE);
 
         // Invalid FEN: Squares don't add up to 64
-        Parsers.parseFEN("rnbqkb1r/pp1p1pPp/5/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid FEN: Squares don't add up to 64
+                        Parsers.parseFEN("rnbqkb1r/pp1p1pPp/5/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
+                    }, 
+                    "Invalid move: d2d5");
         
         Assertions.assertEquals(0, config.CASTLING_RIGHT);
         Assertions.assertEquals(whitePieces, config.OCCUPANCIES[0]);
@@ -124,8 +154,12 @@ public class TestParsers {
         Assertions.assertEquals('w', config.SIDE_TO_MOVE);
         Assertions.assertEquals("no_square", config.ENPASSANT_SQUARE);
 
-        // Invalid FEN: Squares don't add up to 64
-        Parsers.parseFEN("rnbqkb1r/pp1p1pPp/9/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid FEN: Squares don't add up to 64
+                        Parsers.parseFEN("rnbqkb1r/pp1p1pPp/9/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1");
+                    }, 
+                    "Invalid move: d2d5");
         
         Assertions.assertEquals(0, config.CASTLING_RIGHT);
         Assertions.assertEquals(whitePieces, config.OCCUPANCIES[0]);
@@ -137,7 +171,13 @@ public class TestParsers {
         Assertions.assertEquals("no_square", config.ENPASSANT_SQUARE);
 
         // Invalid FEN: Castling rights are incorrect 'KKkq'
-        Parsers.parseFEN("rnbqkb1r/pp1p1pPp/9/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KKkq e6 0 1");
+        // Parsers.parseFEN("rnbqkb1r/pp1p1pPp/9/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KKkq e6 0 1");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, 
+                    () -> {
+                        // Invalid FEN: Castling rights are incorrect 'KKkq'
+                        Parsers.parseFEN("rnbqkb1r/pp1p1pPp/9/2p1pP2/1P6/3P3P/P1P1P3/RNBQKBNR w KKkq e6 0 1");
+                    }, 
+                    "Invalid move: d2d5");
         
         Assertions.assertEquals(0, config.CASTLING_RIGHT);
         Assertions.assertEquals(whitePieces, config.OCCUPANCIES[0]);
@@ -149,6 +189,13 @@ public class TestParsers {
         Assertions.assertEquals("no_square", config.ENPASSANT_SQUARE);
     }
 
+    /*
+     *  ################################################
+        ##                                            ##
+        ##                Parse Moves                 ##
+        ##                                            ##
+        ################################################
+     */
     @Test
     void testParseCorrectMove() {
         int move = MoveCoder.encodeMove(
@@ -442,6 +489,68 @@ public class TestParsers {
         );
         Assertions.assertEquals(move, Parsers.parseMove("g1h1"));
    }
+    /*
+     *  ################################################
+        ##                                            ##
+        ##              Parse Position                ##
+        ##                                            ##
+        ################################################
+     */
+
+    @Test
+    void testParsePosition() {
+        long expOcc1 = config.OCCUPANCIES[1];
+        long expOcc2 = config.OCCUPANCIES[2];
+        long expPB3 = config.PIECE_BITBOARDS[3];
+        // Since the default position is the start position
+        // we screw it up a bit by first loading a random FEN.
+        Parsers.parseFEN(Config.CMK_POSITION);
+        Parsers.parsePosition("position startpos");
+        Assertions.assertEquals(expOcc1, config.OCCUPANCIES[1]);
+        Assertions.assertEquals(expOcc2, config.OCCUPANCIES[2]);
+        Assertions.assertEquals(expPB3, config.PIECE_BITBOARDS[3]);
+    }
+
+    @Test
+    void testParseInvalidPositionCommand() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            // position has to be followed by another command
+            Parsers.parsePosition("position");
+        }, "Invalid command");
+    }
+
+    @Test
+    void testParseInvalidPositionCommand2() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            // position has to be followed by another command
+            Parsers.parsePosition("position startpos moves e2e5");
+        }, "Invalid command");
+    }
+
+    @Test
+    void testParseInvalidPosition2ndCommandNotFEN() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            // position has to be followed by another command
+            Parsers.parsePosition("position fien");
+        }, "Invalid command");
+    }
+
+    @Test
+    void testParsePositionInvalidCommandNotMoves() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            // 'moves' spelt wrongly
+            Parsers.parsePosition("position startpos mooves");
+        }, "Invalid command");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            // missing 'moves' command before moves are passes
+            Parsers.parsePosition("position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 e2a6 e8g8");
+        }, "Invalid command");
+    }
+
+    // @Test
+    // void testParseFENPosition() {}
+
+
 
     // @Test
     // void testParseIncorrectMoveKingIntoCheck() {
