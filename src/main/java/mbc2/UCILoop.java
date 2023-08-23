@@ -7,12 +7,12 @@ public class UCILoop {
     // private BoardState boardState;
     // private MoveGenerator moveGen;
     // private MoveUtils moveUtils;
-    private Parsers parsers;
+    // private Parsers parsers;
     private static String ENGINE_INFO = "id name MBC2\nid author Mike Bams Chess\nuciok";
 
-    public UCILoop(Parsers parsers) {
-        this.parsers = parsers;
-    }
+    // public UCILoop(Parsers parsers) {
+    //     this.parsers = parsers;
+    // }
     // public UciLoop(Config Config, BoardState boardState, MoveGenerator moveGen, MoveUtils moveUtils) {
     //     this.config = Config;
     //     this.boardState = boardState;
@@ -20,7 +20,19 @@ public class UCILoop {
     //     this.moveUtils = moveUtils;
     // }
 
-    public void run() {
+    public static void main(String[] args) {
+        Config config = new Config();
+        EngineInitMethods.initAll();
+        MoveUtils moveUtils = new MoveUtils(config);
+        MoveGenerator moveGenerator = new MoveGenerator(moveUtils, config);
+        BoardState boardState = new BoardState(config);
+        Parsers parsers = new Parsers(config, boardState, moveGenerator, moveUtils);
+        Evaluator evaluator = new Evaluator(config, moveGenerator, moveUtils);
+
+        run(parsers, evaluator);
+    }
+
+    public static void run(Parsers parsers, Evaluator evaluator) {
         // init scanner
         Scanner uciScanner = new Scanner(System.in);
         // Start the main loop
@@ -34,13 +46,13 @@ public class UCILoop {
                     System.out.println("readyok");
                     break;
                 case "position":
-                    this.parsers.parsePosition(command);
+                    parsers.parsePosition(command);
                     break;
                 case "go":
-                    this.parsers.parseGo(command);
+                    parsers.parseGo(command);
                     break;
                 case "ucinewgame":
-                    this.parsers.parsePosition("position startpos");
+                    parsers.parsePosition("position startpos");
                     break;
                 case "uci":
                     System.out.println(ENGINE_INFO);
@@ -48,10 +60,13 @@ public class UCILoop {
                 case "quit":
                     uciScanner.close();
                     return;
+                case "evaluate":
+                    System.out.println("Evaluation is: " + evaluator.evaluatePosition());
+                    break;
             
-                default: 
-                    uciScanner.close();
-                    throw new IllegalArgumentException("Invalid UCI command passed: " + command);
+                // default: 
+                //     uciScanner.close();
+                //     throw new IllegalArgumentException("Invalid UCI command passed: " + command);
             }
         }
     }

@@ -11,9 +11,9 @@ public class Main {
         
         BoardState boardState = new BoardState(config);
         Parsers parsers = new Parsers(config, boardState, MoveGenerator, MoveUtils);
-        UciLoop uciLoop = new UciLoop(parsers);
+        // PrintUtils.printBoard(config);
+        Evaluator evaluator = new Evaluator(config, MoveGenerator, MoveUtils);
         PrintUtils.printBoard(config);
-        uciLoop.run();
-
+        evaluator.searchPosition(2);
     }
 }

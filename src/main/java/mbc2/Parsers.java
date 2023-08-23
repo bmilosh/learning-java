@@ -161,7 +161,6 @@ public class Parsers {
                 try {
                     depth = Integer.parseInt(commandList[pointer + 1]);
                 } catch (Exception e) {
-                    // TODO: handle exception
                     depth = 6;
                 }
             }
@@ -170,6 +169,9 @@ public class Parsers {
         }
         depth = depth < 0 ? 6 : depth;
         System.out.println("depth is: " + depth);
+        // Search the position
+        Evaluator evaluator = new Evaluator(this.config, this.moveGen, this.moveUtils);
+        evaluator.searchPosition(depth);
     }
 
     public void parsePosition(String command) {
@@ -229,7 +231,7 @@ public class Parsers {
             // We have moves
             while (moveCommandPos < commandList.length) {
                 String move = commandList[moveCommandPos];
-                System.out.println(move);
+                // System.out.println(move);
                 try {
                     int encodedMove = parseMove(move);
                     this.moveUtils.makeMove(encodedMove, false);
@@ -240,6 +242,7 @@ public class Parsers {
                 }
             }
         }
+        PrintUtils.printBoard(this.config);
     }
 
     /**
