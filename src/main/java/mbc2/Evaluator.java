@@ -22,10 +22,17 @@ public class Evaluator {
         this.config.PV_LENGTH = new int[Config.MAX_PLY];
         this.config.PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
         this.config.LEAF_NODES = 0;
+        this.config.FOLLOW_PV = false;
+        this.config.SCORE_PV = false;
 
         // Iterative deepening
         int currentDepth = 1;
         while (currentDepth <= depth) {
+            // Can remove this later
+            this.config.LEAF_NODES = 0;
+            
+            // Enable PV following
+            this.config.FOLLOW_PV = true;
 
             int score = negamax(-50000, 50000, currentDepth);
             System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
@@ -37,14 +44,39 @@ public class Evaluator {
                 System.out.print(" ");
             }
             System.out.println();
-            
+
             currentDepth++;
         }
         System.out.print("bestmove ");
         PrintUtils.printMove(this.config.PV_TABLE[0][0], true);
     }
 
+    public void enablePVMoveScoring(ArrayList<Integer> moveList) {
+        // First, disable PV following
+        this.config.FOLLOW_PV = false;
+
+        // loop over available moves
+        for (int move : moveList) {
+            // ensure we hit PV
+            if (this.config.PV_TABLE[0][this.ply] == move) {
+                // First, enable move scoring
+                this.config.SCORE_PV = true;
+                // Next, enable PV following
+                this.config.FOLLOW_PV = true;
+            }
+        }
+    }
+
     public int scoreMove(int move) {
+        // If PV scoring is allowed
+        if (this.config.SCORE_PV) {
+            if (this.config.PV_TABLE[0][this.ply] == move) {
+                // disable PV scoring
+                this.config.SCORE_PV = false;
+                // give PV move the highest score so it gets searched first first
+                return 20000;
+            }
+        }
         // score capture move
         if (MoveCoder.getCaptureFlag(move) != 0) {
             int target = 0;
@@ -223,7 +255,13 @@ public class Evaluator {
         BoardState boardState = new BoardState(this.config);
 
         ArrayList<Integer> moveList = this.moveGenerator.generateMoves();
+        // score PV before sorting
+        if (this.config.FOLLOW_PV) {
+            // enable scoring of PV moves
+            enablePVMoveScoring(moveList);
+        }
         int[] moveList1 = sortMoves(moveList);
+
         for (int move : moveList1) {
             // preserve current board state
             boardState.copyBoardState();

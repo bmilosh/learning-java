@@ -268,6 +268,10 @@ public class Config {
     public int[] PV_LENGTH = new int[MAX_PLY];
     public int[][] PV_TABLE = new int[MAX_PLY][MAX_PLY];
 
+    // For PV scoring
+    public boolean FOLLOW_PV = false;
+    public boolean SCORE_PV = false;
+
     /*
      *  ################################################
         ##                                            ##
