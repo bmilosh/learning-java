@@ -24,7 +24,7 @@ public class Main {
 
         PrintUtils.printBoard(config);
         // long s = TimeUtility.getTimeMs();
-        config.ORIGINAL_DEPTH = 5;
+        config.ORIGINAL_DEPTH = 6;
         evaluator.searchPosition(config.ORIGINAL_DEPTH);
         // System.out.println("Time taken: " + (TimeUtility.getTimeMs() - s) + " ms");
         // perft.perftTest(3);

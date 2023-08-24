@@ -16,16 +16,30 @@ public class Evaluator {
     }
 
     public void searchPosition(int depth) {
-        int score = negamax(-50000, 50000, depth);
-        System.out.printf("info score cp %d depth %d nodes %d pv ", score, depth, this.config.LEAF_NODES);
+        // For iterative deepening, we reinitialise these variables
+        this.config.KILLER_MOVES = new int[2][64];
+        this.config.HISTORY_MOVES = new int[64][64];
+        this.config.PV_LENGTH = new int[Config.MAX_PLY];
+        this.config.PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
+        this.config.LEAF_NODES = 0;
 
-        // loop over moves in a PV line
-        for (int num = 0; num < this.config.PV_LENGTH[0]; num++) {
-            // print PV move
-            PrintUtils.printMove(this.config.PV_TABLE[0][num], false);
-            System.out.print(" ");
+        // Iterative deepening
+        int currentDepth = 1;
+        while (currentDepth <= depth) {
+
+            int score = negamax(-50000, 50000, currentDepth);
+            System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
+
+            // loop over moves in a PV line
+            for (int num = 0; num < this.config.PV_LENGTH[0]; num++) {
+                // print PV move
+                PrintUtils.printMove(this.config.PV_TABLE[0][num], false);
+                System.out.print(" ");
+            }
+            System.out.println();
+            
+            currentDepth++;
         }
-        System.out.println();
         System.out.print("bestmove ");
         PrintUtils.printMove(this.config.PV_TABLE[0][0], true);
     }
@@ -191,6 +205,9 @@ public class Evaluator {
             return quiescenceSearch(alpha, beta);
         }
 
+        // avoid overflow
+        if (this.ply >= Config.MAX_PLY) return evaluatePosition();
+
         this.config.LEAF_NODES++;
 
         int score;
@@ -240,7 +257,6 @@ public class Evaluator {
             // better move
             if (score > alpha) {
                 if (MoveCoder.getCaptureFlag(move) == 0) {
-
                     // store history move
                     this.config.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)] += depth;
                 }
