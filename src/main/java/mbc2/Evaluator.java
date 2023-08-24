@@ -23,7 +23,86 @@ public class Evaluator {
         }
     }
 
+    public int scoreMove(int move) {
+        // score capture move
+        if (MoveCoder.getCaptureFlag(move) != 0) {
+            int target = 0;
+            // white captures black pieces, and vice-versa
+            int targetOffset = this.config.SIDE_TO_MOVE == 'w' ? 6 : 0;
+            int moveTarget = MoveCoder.getTargetSquare(move);
+            while (target < 6) {
+                long bitboard = this.config.PIECE_BITBOARDS[target + targetOffset];
+                if (BitBoard.getBitAtIndex(bitboard, moveTarget) != 0) {
+                    // We've found the piece we're capturing.
+                    target += targetOffset;
+                    break;
+                }
+                target++;
+            }
+            // score move by MVV LVA lookup [source piece][target piece]
+            return Config.MVV_LVA[MoveCoder.getMovingPiece(move)][target] + 10000;
+        }
+        // score quiet moves
+        else {
+            // score 1st killer move
+            if (this.config.KILLER_MOVES[0][this.ply] == move) return 9000;
+            // score 2nd killer move
+            else if (this.config.KILLER_MOVES[1][this.ply] == move) return 8000;
+            // score history move
+            else return this.config.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)];
+        }
+    }
+
+    public int[] sortMoves(ArrayList<Integer> moveList) {
+        int size = moveList.size();
+        int[] sortedMoves = new int[size];
+        // init score moves array
+        int[] moveScores = new int[size];
+        for (int idx = 0; idx < size; idx++) {
+            moveScores[idx] = scoreMove(moveList.get(idx));
+        }
+        for (int current = 0; current < size; current++) {
+            // check moves ahead of current move
+            for (int next = current + 1; next < size; next++) {
+                int nMove = sortedMoves[next] == 0 ? moveList.get(next) : sortedMoves[next];
+                int cMove = sortedMoves[current] == 0 ? moveList.get(current) : sortedMoves[current];
+                int nScore = moveScores[next];
+                int cScore = moveScores[current];
+                if (cScore < nScore) {
+                    // swap moves
+                    sortedMoves[current] = nMove;
+                    sortedMoves[next] = cMove;
+                    // swap scores
+                    moveScores[current] = nScore;
+                    moveScores[next] = cScore;
+                } else {
+                    sortedMoves[current] = cMove;
+                    sortedMoves[next] = nMove;
+                }
+            }
+        }
+        return sortedMoves;
+    }
+
+    public void printMoveScore(int[] moveList) {
+        System.out.println("        Move scores:\n\n");
+
+        for (int move : moveList) {
+            System.out.printf("        move: %s  score: %d\n", PrintUtils.moveToString(move), scoreMove(move));
+        }
+    }
+
+    public void printMoveScore(ArrayList<Integer> moveList) {
+        System.out.println("        Move scores:\n\n");
+
+        for (int move : moveList) {
+            System.out.printf("        move: %s  score: %d\n", PrintUtils.moveToString(move), scoreMove(move));
+        }
+    }
+
     public int quiescenceSearch(int alpha, int beta) {
+        this.config.LEAF_NODES++;
+
         int evaluation = evaluatePosition();
 
         // fail-hard (beta cutoff)
@@ -39,7 +118,8 @@ public class Evaluator {
         BoardState boardState = new BoardState(this.config);
 
         ArrayList<Integer> moveList = this.moveGenerator.generateMoves();
-        for (int move : moveList) {
+        int[] moveList1 = sortMoves(moveList);
+        for (int move : moveList1) {
             // preserve current board state
             boardState.copyBoardState();
             
@@ -110,11 +190,13 @@ public class Evaluator {
                     BitBoard.getLSBIndex(this.config.PIECE_BITBOARDS[Config.PIECES.get('K') + (6 * ownColour)]), 
                     ownColour ^ 1
         );
+        if (inCheck) depth++;
 
         BoardState boardState = new BoardState(this.config);
 
         ArrayList<Integer> moveList = this.moveGenerator.generateMoves();
-        for (int move : moveList) {
+        int[] moveList1 = sortMoves(moveList);
+        for (int move : moveList1) {
             // preserve current board state
             boardState.copyBoardState();
             
@@ -124,6 +206,13 @@ public class Evaluator {
                 this.ply--;
                 continue;
             }
+
+            // FOR DEBUGGING PURPOSES
+            int nodesBefore = 0;
+            if (depth == this.config.ORIGINAL_DEPTH) {
+                nodesBefore = this.config.LEAF_NODES;
+            }
+
             legalMoves++;
             score = -negamax(-beta, -alpha, depth - 1);
 
@@ -132,13 +221,29 @@ public class Evaluator {
             // restore board state
             boardState.restoreBoardState();
 
+            // FOR DEBUGGING PURPOSES
+            if (depth == this.config.ORIGINAL_DEPTH) {
+                System.out.printf("    %s nodes: %d\n", PrintUtils.moveToString(move), (this.config.LEAF_NODES - nodesBefore));
+            }
+
             // fail-hard beta cutoff
             if (score >= beta) {
+                // on quiet moves
+                if (MoveCoder.getCaptureFlag(move) == 0) {
+                    // store killer moves
+                    this.config.KILLER_MOVES[1][this.ply] = this.config.KILLER_MOVES[0][this.ply];
+                    this.config.KILLER_MOVES[0][this.ply] = move;
+                }
                 // node (move) fails high
                 return beta;
             }
             // better move
             if (score > alpha) {
+                if (MoveCoder.getCaptureFlag(move) == 0) {
+
+                    // store history move
+                    this.config.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)] += depth;
+                }
                 // PV node
                 alpha = score;
                 // root node
