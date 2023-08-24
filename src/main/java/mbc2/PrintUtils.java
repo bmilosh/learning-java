@@ -35,8 +35,9 @@ public class PrintUtils {
         return String.format("%s%s", source, target);
     }
 
-    public static void printMove(int move) {
-        System.out.println(moveToString(move));
+    public static void printMove(int move, boolean addNewLine) {
+        if (addNewLine) System.out.println(moveToString(move));
+        else System.out.print(moveToString(move));
     }
 
     public static void printBoard(Config config) {

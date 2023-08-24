@@ -205,14 +205,13 @@ public class Config {
     * most valuable victim & less valuable attacker
                             
         (Victims) Pawn Knight Bishop   Rook  Queen   King
-    (Attackers)
+      (Attackers)
             Pawn   105    205    305    405    505    605
-        Knight   104    204    304    404    504    604
-        Bishop   103    203    303    403    503    603
+          Knight   104    204    304    404    504    604
+          Bishop   103    203    303    403    503    603
             Rook   102    202    302    402    502    602
-        Queen   101    201    301    401    501    601
+           Queen   101    201    301    401    501    601
             King   100    200    300    400    500    600
-
     */
     // Access as MVV_LVA_TABLE[attacker_piece_index][victim_piece_index]
     public static int[][] MVV_LVA = {
@@ -236,6 +235,38 @@ public class Config {
     // Accessed as HISTORY_MOVES[piece_index][square]
     public int[][] HISTORY_MOVES = new int[12][64];
     public int ORIGINAL_DEPTH;
+
+    /*
+     *  ################################################
+        ##                                            ##
+        ##           Principal variation              ##
+        ##                                            ##
+        ################################################
+
+      ================================
+            Triangular PV table
+      --------------------------------
+        PV line: e2e4 e7e5 g1f3 b8c6
+      ================================
+
+           0    1    2    3    4    5
+      
+      0    m1   m2   m3   m4   m5   m6
+      
+      1    0    m2   m3   m4   m5   m6 
+      
+      2    0    0    m3   m4   m5   m6
+      
+      3    0    0    0    m4   m5   m6
+       
+      4    0    0    0    0    m5   m6
+      
+      5    0    0    0    0    0    m6
+
+     */
+
+    public int[] PV_LENGTH = new int[MAX_PLY];
+    public int[][] PV_TABLE = new int[MAX_PLY][MAX_PLY];
 
     /*
      *  ################################################

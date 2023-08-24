@@ -17,10 +17,17 @@ public class Evaluator {
 
     public void searchPosition(int depth) {
         int score = negamax(-50000, 50000, depth);
-        if (this.bestMove != 0) {
-            System.out.printf("info score cp %d depth %d nodes %d\n", score, depth, this.config.LEAF_NODES);
-            System.out.println("bestmove " + PrintUtils.moveToString(this.bestMove));
+        System.out.printf("info score cp %d depth %d nodes %d pv ", score, depth, this.config.LEAF_NODES);
+
+        // loop over moves in a PV line
+        for (int num = 0; num < this.config.PV_LENGTH[0]; num++) {
+            // print PV move
+            PrintUtils.printMove(this.config.PV_TABLE[0][num], false);
+            System.out.print(" ");
         }
+        System.out.println();
+        System.out.print("bestmove ");
+        PrintUtils.printMove(this.config.PV_TABLE[0][0], true);
     }
 
     public int scoreMove(int move) {
@@ -177,14 +184,18 @@ public class Evaluator {
     }
 
     public int negamax(int alpha, int beta, int depth) {
+        // init PV length 
+        this.config.PV_LENGTH[this.ply] = this.ply;
+
         if (depth == 0) {
             return quiescenceSearch(alpha, beta);
         }
+
         this.config.LEAF_NODES++;
+
         int score;
-        int bestSoFar = 0;
-        int oldAlpha = alpha;
         int legalMoves = 0;
+
         int ownColour = Config.COLOURS.get(this.config.SIDE_TO_MOVE);
         boolean inCheck = this.moveUtils.isKingUnderCheck(
                     BitBoard.getLSBIndex(this.config.PIECE_BITBOARDS[Config.PIECES.get('K') + (6 * ownColour)]), 
@@ -207,12 +218,6 @@ public class Evaluator {
                 continue;
             }
 
-            // FOR DEBUGGING PURPOSES
-            int nodesBefore = 0;
-            if (depth == this.config.ORIGINAL_DEPTH) {
-                nodesBefore = this.config.LEAF_NODES;
-            }
-
             legalMoves++;
             score = -negamax(-beta, -alpha, depth - 1);
 
@@ -220,11 +225,6 @@ public class Evaluator {
 
             // restore board state
             boardState.restoreBoardState();
-
-            // FOR DEBUGGING PURPOSES
-            if (depth == this.config.ORIGINAL_DEPTH) {
-                System.out.printf("    %s nodes: %d\n", PrintUtils.moveToString(move), (this.config.LEAF_NODES - nodesBefore));
-            }
 
             // fail-hard beta cutoff
             if (score >= beta) {
@@ -246,11 +246,17 @@ public class Evaluator {
                 }
                 // PV node
                 alpha = score;
-                // root node
-                if (this.ply == 0) {
-                    // current best move
-                    bestSoFar = move;
+
+                // write PV move
+                this.config.PV_TABLE[this.ply][this.ply] = move;
+
+                // loop over the next plies
+                for (int nextPly = this.ply + 1; nextPly < this.config.PV_LENGTH[this.ply + 1]; nextPly++) {
+                    // copy move from deeper ply into a current ply's line
+                    this.config.PV_TABLE[this.ply][nextPly] = this.config.PV_TABLE[this.ply + 1][nextPly];
                 }
+                // adjust PV length
+                this.config.PV_LENGTH[this.ply] = this.config.PV_LENGTH[this.ply + 1];
             }
         }
         if (legalMoves == 0) {
@@ -258,9 +264,6 @@ public class Evaluator {
             if (inCheck) return -49000 + this.ply;
             // else return stalemate score
             else return 0;
-        }
-        if (oldAlpha != alpha) {
-            this.bestMove = bestSoFar;
         }
 
         // node (move) fails low
