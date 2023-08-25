@@ -29,8 +29,8 @@ public class Evaluator {
         int currentDepth = 1;
         while (currentDepth <= depth) {
             // Can remove this later
-            this.config.LEAF_NODES = 0;
-            
+            // this.config.LEAF_NODES = 0;
+
             // Enable PV following
             this.config.FOLLOW_PV = true;
 
@@ -230,6 +230,8 @@ public class Evaluator {
     }
 
     public int negamax(int alpha, int beta, int depth) {
+        // init found_PV flag
+        boolean found_PV = false;
         // init PV length 
         this.config.PV_LENGTH[this.ply] = this.ply;
 
@@ -242,7 +244,7 @@ public class Evaluator {
 
         this.config.LEAF_NODES++;
 
-        int score;
+        int score = 0;
         int legalMoves = 0;
 
         int ownColour = Config.COLOURS.get(this.config.SIDE_TO_MOVE);
@@ -274,7 +276,45 @@ public class Evaluator {
             }
 
             legalMoves++;
-            score = -negamax(-beta, -alpha, depth - 1);
+
+            // Principal Variation Search (PVS)
+            if (found_PV) {
+                /* "Once you've found a move with a score that is between alpha and beta,
+                the rest of the moves are searched with the goal of proving that they are all bad.
+                It's possible to do this a bit faster than a search that worries that one
+                of the remaining moves might be good."
+                From CMK himself.
+                */         
+                score = -negamax(-alpha - 1, -alpha, depth - 1);  
+
+                /* "If the algorithm finds out that it was wrong, and that one of the
+                subsequent moves was better than the first PV move, it has to search again,
+                in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
+                but generally not often enough to counteract the savings gained from doing the
+                "bad move proof" search referred to earlier." 
+                From CMK himself.
+                */ 
+
+                /*
+                    # "We expect all other moves to come back with a fail low (score <= alpha).
+                    # The reason for this assumption is that we trust our move ordering.
+                    # But if that search comes back with a (score > alpha) then it failed high and is probably
+                    # a new best score. But only if it is also (score < beta), otherwise it is a real fail high.
+                    # If it is inside our window we re-search it now and give it a new chance.
+                    # Re-searches can be very fast especially when we use a transposition table.
+                    # Then the PVS assumption continues, probably with a new best move."
+                    # from Harald Luessen's comment on this video from Code Monkey King's BBC series
+                    # https://www.youtube.com/watch?v=Gs4Zk6aihyQ&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs&index=62
+                 */
+                if ((score > alpha) && (score < beta)) {
+                    score = -negamax(-beta, -alpha, depth - 1);
+                }          
+            }
+            else {
+                // for all other types of nodes (moves), do normal alpha-beta search
+                score = -negamax(-beta, -alpha, depth - 1);
+            }
+            
 
             this.ply--;
 
@@ -300,6 +340,9 @@ public class Evaluator {
                 }
                 // PV node
                 alpha = score;
+
+                // enable found PV flag
+                found_PV = true;
 
                 // write PV move
                 this.config.PV_TABLE[this.ply][this.ply] = move;
