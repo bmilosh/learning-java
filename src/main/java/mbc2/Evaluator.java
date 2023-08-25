@@ -80,6 +80,10 @@ public class Evaluator {
     private boolean FOLLOW_PV = false;
     private boolean SCORE_PV = false;
 
+    // For LMR
+    private int FULL_DEPTH_MOVES = 4;
+    private int REDUCTION_LIMIT = 3;
+
 
     public Evaluator(Config config, MoveGenerator moveGenerator, MoveUtils moveUtils) {
         this.config = config;
@@ -302,12 +306,12 @@ public class Evaluator {
     }
 
     public int negamax(int alpha, int beta, int depth) {
-        // init found_PV flag
-        boolean found_PV = false;
+        // // init found_PV flag
+        // boolean found_PV = false;
         // init PV length 
         this.PV_LENGTH[this.ply] = this.ply;
 
-        if (depth == 0) {
+        if (depth <= 0) {
             return quiescenceSearch(alpha, beta);
         }
 
@@ -318,6 +322,7 @@ public class Evaluator {
 
         int score = 0;
         int legalMoves = 0;
+        int movesSearched = 0;
 
         int ownColour = Config.COLOURS.get(this.config.SIDE_TO_MOVE);
         boolean inCheck = this.moveUtils.isKingUnderCheck(
@@ -349,49 +354,111 @@ public class Evaluator {
 
             legalMoves++;
 
-            // Principal Variation Search (PVS)
-            if (found_PV) {
-                /* "Once you've found a move with a score that is between alpha and beta,
-                the rest of the moves are searched with the goal of proving that they are all bad.
-                It's possible to do this a bit faster than a search that worries that one
-                of the remaining moves might be good."
-                From CMK himself.
-                */         
-                score = -negamax(-alpha - 1, -alpha, depth - 1);  
+            /*
+             * TESTING PURPOSES START!!!!!!!!!
+             */
+            /*
+             * TESTING PURPOSES END!!!!!!!!!
+             */
 
-                /* "If the algorithm finds out that it was wrong, and that one of the
-                subsequent moves was better than the first PV move, it has to search again,
-                in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
-                but generally not often enough to counteract the savings gained from doing the
-                "bad move proof" search referred to earlier." 
-                From CMK himself.
-                */ 
-
-                /*
-                    # "We expect all other moves to come back with a fail low (score <= alpha).
-                    # The reason for this assumption is that we trust our move ordering.
-                    # But if that search comes back with a (score > alpha) then it failed high and is probably
-                    # a new best score. But only if it is also (score < beta), otherwise it is a real fail high.
-                    # If it is inside our window we re-search it now and give it a new chance.
-                    # Re-searches can be very fast especially when we use a transposition table.
-                    # Then the PVS assumption continues, probably with a new best move."
-                    # from Harald Luessen's comment on this video from Code Monkey King's BBC series
-                    # https://www.youtube.com/watch?v=Gs4Zk6aihyQ&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs&index=62
-                 */
-                if ((score > alpha) && (score < beta)) {
-                    score = -negamax(-beta, -alpha, depth - 1);
-                }          
-            }
-            else {
-                // for all other types of nodes (moves), do normal alpha-beta search
+            // Full search
+            if (movesSearched == 0) {
+                // do normal search
                 score = -negamax(-beta, -alpha, depth - 1);
             }
-            
+
+            // Late Move Reduction (LMR)
+            else {
+                // condition to consider LMR
+                if (movesSearched >= this.FULL_DEPTH_MOVES &&
+                    depth >= this.REDUCTION_LIMIT &&
+                    !inCheck &&
+                    MoveCoder.getCaptureFlag(move) == 0 &&
+                    MoveCoder.getPromotedPiece(move) == 0) {
+                        // search with reduced depth
+                        score = -negamax(-alpha - 1, -alpha, depth - 2);
+                    }
+                else {
+                    // This move doesn't qualify for LMR, so we ensure that
+                    // full depth search is done instead (in the next step)
+                    score = alpha + 1;
+                }
+
+                // Apply Principal Variation Search (PVS)
+                if (score > alpha) {
+                    // We found a good move (PV) and now we check to confirm that all other moves are bad
+                    score = -negamax(-alpha - 1, -alpha, depth - 1);  
+
+                    /* "If the algorithm finds out that it was wrong, and that one of the
+                    subsequent moves was better than the first PV move, it has to search again,
+                    in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
+                    but generally not often enough to counteract the savings gained from doing the
+                    "bad move proof" search referred to earlier." 
+                    From CMK himself.
+                    */ 
+
+                    /*
+                        # "We expect all other moves to come back with a fail low (score <= alpha).
+                        # The reason for this assumption is that we trust our move ordering.
+                        # But if that search comes back with a (score > alpha) then it failed high and is probably
+                        # a new best score. But only if it is also (score < beta), otherwise it is a real fail high.
+                        # If it is inside our window we re-search it now and give it a new chance.
+                        # Re-searches can be very fast especially when we use a transposition table.
+                        # Then the PVS assumption continues, probably with a new best move."
+                        # from Harald Luessen's comment on this video from Code Monkey King's BBC series
+                        # https://www.youtube.com/watch?v=Gs4Zk6aihyQ&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs&index=62
+                    */
+                    if ((score > alpha) && (score < beta)) {
+                        score = -negamax(-beta, -alpha, depth - 1);
+                    }          
+                }
+            }
+
+            // // Principal Variation Search (PVS)
+            // if (found_PV) {
+            //     /* "Once you've found a move with a score that is between alpha and beta,
+            //     the rest of the moves are searched with the goal of proving that they are all bad.
+            //     It's possible to do this a bit faster than a search that worries that one
+            //     of the remaining moves might be good."
+            //     From CMK himself.
+            //     */         
+            //     score = -negamax(-alpha - 1, -alpha, depth - 1);  
+
+            //     /* "If the algorithm finds out that it was wrong, and that one of the
+            //     subsequent moves was better than the first PV move, it has to search again,
+            //     in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
+            //     but generally not often enough to counteract the savings gained from doing the
+            //     "bad move proof" search referred to earlier." 
+            //     From CMK himself.
+            //     */ 
+
+            //     /*
+            //         # "We expect all other moves to come back with a fail low (score <= alpha).
+            //         # The reason for this assumption is that we trust our move ordering.
+            //         # But if that search comes back with a (score > alpha) then it failed high and is probably
+            //         # a new best score. But only if it is also (score < beta), otherwise it is a real fail high.
+            //         # If it is inside our window we re-search it now and give it a new chance.
+            //         # Re-searches can be very fast especially when we use a transposition table.
+            //         # Then the PVS assumption continues, probably with a new best move."
+            //         # from Harald Luessen's comment on this video from Code Monkey King's BBC series
+            //         # https://www.youtube.com/watch?v=Gs4Zk6aihyQ&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs&index=62
+            //      */
+            //     if ((score > alpha) && (score < beta)) {
+            //         score = -negamax(-beta, -alpha, depth - 1);
+            //     }          
+            // }
+            // else {
+            //     // // for all other types of nodes (moves), do normal alpha-beta search
+            //     // score = -negamax(-beta, -alpha, depth - 1);
+            // }            
 
             this.ply--;
 
             // restore board state
             boardState.restoreBoardState();
+
+            // increment movesSearched counter
+            movesSearched++;
 
             // fail-hard beta cutoff
             if (score >= beta) {
@@ -413,8 +480,8 @@ public class Evaluator {
                 // PV node
                 alpha = score;
 
-                // enable found PV flag
-                found_PV = true;
+                // // enable found PV flag
+                // found_PV = true;
 
                 // write PV move
                 this.PV_TABLE[this.ply][this.ply] = move;
