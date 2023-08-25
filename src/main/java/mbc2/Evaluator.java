@@ -9,6 +9,78 @@ public class Evaluator {
     public int ply = 0;
     public int bestMove = 0;
 
+    /*
+    * most valuable victim & less valuable attacker
+                            
+        (Victims) Pawn Knight Bishop   Rook  Queen   King
+      (Attackers)
+            Pawn   105    205    305    405    505    605
+          Knight   104    204    304    404    504    604
+          Bishop   103    203    303    403    503    603
+            Rook   102    202    302    402    502    602
+           Queen   101    201    301    401    501    601
+            King   100    200    300    400    500    600
+    */
+    // Access as MVV_LVA_TABLE[attacker_piece_index][victim_piece_index]
+    public static int[][] MVV_LVA = {
+        {105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605},
+        {104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604},
+        {103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603},
+        {102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602},
+        {101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601},
+        {100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600},
+    
+        {105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605},
+        {104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604},
+        {103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603},
+        {102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602},
+        {101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601},
+        {100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600}
+    };
+
+    // Accessed as KILLER_MOVES[id (not more than 2)][ply (we chose a max of 64 plies)]
+    private int[][] KILLER_MOVES = new int[2][64];
+    // Accessed as HISTORY_MOVES[piece_index][square]
+    private int[][] HISTORY_MOVES = new int[12][64];
+    public int ORIGINAL_DEPTH;
+
+    /*
+     *  ################################################
+        ##                                            ##
+        ##           Principal variation              ##
+        ##                                            ##
+        ################################################
+
+      ================================
+            Triangular PV table
+      --------------------------------
+        PV line: e2e4 e7e5 g1f3 b8c6
+      ================================
+
+           0    1    2    3    4    5
+      
+      0    m1   m2   m3   m4   m5   m6
+      
+      1    0    m2   m3   m4   m5   m6 
+      
+      2    0    0    m3   m4   m5   m6
+      
+      3    0    0    0    m4   m5   m6
+       
+      4    0    0    0    0    m5   m6
+      
+      5    0    0    0    0    0    m6
+
+     */
+
+    private int[] PV_LENGTH = new int[Config.MAX_PLY];
+    private int[][] PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
+
+    // For PV scoring
+    private boolean FOLLOW_PV = false;
+    private boolean SCORE_PV = false;
+
+
     public Evaluator(Config config, MoveGenerator moveGenerator, MoveUtils moveUtils) {
         this.config = config;
         this.moveGenerator = moveGenerator;
@@ -17,13 +89,13 @@ public class Evaluator {
 
     public void searchPosition(int depth) {
         // For iterative deepening, we reinitialise these variables
-        this.config.KILLER_MOVES = new int[2][64];
-        this.config.HISTORY_MOVES = new int[64][64];
-        this.config.PV_LENGTH = new int[Config.MAX_PLY];
-        this.config.PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
+        this.KILLER_MOVES = new int[2][64];
+        this.HISTORY_MOVES = new int[64][64];
+        this.PV_LENGTH = new int[Config.MAX_PLY];
+        this.PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
         this.config.LEAF_NODES = 0;
-        this.config.FOLLOW_PV = false;
-        this.config.SCORE_PV = false;
+        this.FOLLOW_PV = false;
+        this.SCORE_PV = false;
 
         // Iterative deepening
         int currentDepth = 1;
@@ -32,15 +104,15 @@ public class Evaluator {
             // this.config.LEAF_NODES = 0;
 
             // Enable PV following
-            this.config.FOLLOW_PV = true;
+            this.FOLLOW_PV = true;
 
             int score = negamax(-50000, 50000, currentDepth);
             System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
 
             // loop over moves in a PV line
-            for (int num = 0; num < this.config.PV_LENGTH[0]; num++) {
+            for (int num = 0; num < this.PV_LENGTH[0]; num++) {
                 // print PV move
-                PrintUtils.printMove(this.config.PV_TABLE[0][num], false);
+                PrintUtils.printMove(this.PV_TABLE[0][num], false);
                 System.out.print(" ");
             }
             System.out.println();
@@ -48,31 +120,31 @@ public class Evaluator {
             currentDepth++;
         }
         System.out.print("bestmove ");
-        PrintUtils.printMove(this.config.PV_TABLE[0][0], true);
+        PrintUtils.printMove(this.PV_TABLE[0][0], true);
     }
 
     public void enablePVMoveScoring(ArrayList<Integer> moveList) {
         // First, disable PV following
-        this.config.FOLLOW_PV = false;
+        this.FOLLOW_PV = false;
 
         // loop over available moves
         for (int move : moveList) {
             // ensure we hit PV
-            if (this.config.PV_TABLE[0][this.ply] == move) {
+            if (this.PV_TABLE[0][this.ply] == move) {
                 // First, enable move scoring
-                this.config.SCORE_PV = true;
+                this.SCORE_PV = true;
                 // Next, enable PV following
-                this.config.FOLLOW_PV = true;
+                this.FOLLOW_PV = true;
             }
         }
     }
 
     public int scoreMove(int move) {
         // If PV scoring is allowed
-        if (this.config.SCORE_PV) {
-            if (this.config.PV_TABLE[0][this.ply] == move) {
+        if (this.SCORE_PV) {
+            if (this.PV_TABLE[0][this.ply] == move) {
                 // disable PV scoring
-                this.config.SCORE_PV = false;
+                this.SCORE_PV = false;
                 // give PV move the highest score so it gets searched first first
                 return 20000;
             }
@@ -93,16 +165,16 @@ public class Evaluator {
                 target++;
             }
             // score move by MVV LVA lookup [source piece][target piece]
-            return Config.MVV_LVA[MoveCoder.getMovingPiece(move)][target] + 10000;
+            return MVV_LVA[MoveCoder.getMovingPiece(move)][target] + 10000;
         }
         // score quiet moves
         else {
             // score 1st killer move
-            if (this.config.KILLER_MOVES[0][this.ply] == move) return 9000;
+            if (this.KILLER_MOVES[0][this.ply] == move) return 9000;
             // score 2nd killer move
-            else if (this.config.KILLER_MOVES[1][this.ply] == move) return 8000;
+            else if (this.KILLER_MOVES[1][this.ply] == move) return 8000;
             // score history move
-            else return this.config.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)];
+            else return this.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)];
         }
     }
 
@@ -233,7 +305,7 @@ public class Evaluator {
         // init found_PV flag
         boolean found_PV = false;
         // init PV length 
-        this.config.PV_LENGTH[this.ply] = this.ply;
+        this.PV_LENGTH[this.ply] = this.ply;
 
         if (depth == 0) {
             return quiescenceSearch(alpha, beta);
@@ -258,7 +330,7 @@ public class Evaluator {
 
         ArrayList<Integer> moveList = this.moveGenerator.generateMoves();
         // score PV before sorting
-        if (this.config.FOLLOW_PV) {
+        if (this.FOLLOW_PV) {
             // enable scoring of PV moves
             enablePVMoveScoring(moveList);
         }
@@ -326,8 +398,8 @@ public class Evaluator {
                 // on quiet moves
                 if (MoveCoder.getCaptureFlag(move) == 0) {
                     // store killer moves
-                    this.config.KILLER_MOVES[1][this.ply] = this.config.KILLER_MOVES[0][this.ply];
-                    this.config.KILLER_MOVES[0][this.ply] = move;
+                    this.KILLER_MOVES[1][this.ply] = this.KILLER_MOVES[0][this.ply];
+                    this.KILLER_MOVES[0][this.ply] = move;
                 }
                 // node (move) fails high
                 return beta;
@@ -336,7 +408,7 @@ public class Evaluator {
             if (score > alpha) {
                 if (MoveCoder.getCaptureFlag(move) == 0) {
                     // store history move
-                    this.config.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)] += depth;
+                    this.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)] += depth;
                 }
                 // PV node
                 alpha = score;
@@ -345,15 +417,15 @@ public class Evaluator {
                 found_PV = true;
 
                 // write PV move
-                this.config.PV_TABLE[this.ply][this.ply] = move;
+                this.PV_TABLE[this.ply][this.ply] = move;
 
                 // loop over the next plies
-                for (int nextPly = this.ply + 1; nextPly < this.config.PV_LENGTH[this.ply + 1]; nextPly++) {
+                for (int nextPly = this.ply + 1; nextPly < this.PV_LENGTH[this.ply + 1]; nextPly++) {
                     // copy move from deeper ply into a current ply's line
-                    this.config.PV_TABLE[this.ply][nextPly] = this.config.PV_TABLE[this.ply + 1][nextPly];
+                    this.PV_TABLE[this.ply][nextPly] = this.PV_TABLE[this.ply + 1][nextPly];
                 }
                 // adjust PV length
-                this.config.PV_LENGTH[this.ply] = this.config.PV_LENGTH[this.ply + 1];
+                this.PV_LENGTH[this.ply] = this.PV_LENGTH[this.ply + 1];
             }
         }
         if (legalMoves == 0) {

@@ -201,76 +201,76 @@ public class Config {
         {},
         KING_POSITIONAL_SCORES,
     };
-    /*
-    * most valuable victim & less valuable attacker
+    // /*
+    // * most valuable victim & less valuable attacker
                             
-        (Victims) Pawn Knight Bishop   Rook  Queen   King
-      (Attackers)
-            Pawn   105    205    305    405    505    605
-          Knight   104    204    304    404    504    604
-          Bishop   103    203    303    403    503    603
-            Rook   102    202    302    402    502    602
-           Queen   101    201    301    401    501    601
-            King   100    200    300    400    500    600
-    */
-    // Access as MVV_LVA_TABLE[attacker_piece_index][victim_piece_index]
-    public static int[][] MVV_LVA = {
-        {105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605},
-        {104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604},
-        {103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603},
-        {102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602},
-        {101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601},
-        {100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600},
+    //     (Victims) Pawn Knight Bishop   Rook  Queen   King
+    //   (Attackers)
+    //         Pawn   105    205    305    405    505    605
+    //       Knight   104    204    304    404    504    604
+    //       Bishop   103    203    303    403    503    603
+    //         Rook   102    202    302    402    502    602
+    //        Queen   101    201    301    401    501    601
+    //         King   100    200    300    400    500    600
+    // */
+    // // Access as MVV_LVA_TABLE[attacker_piece_index][victim_piece_index]
+    // public static int[][] MVV_LVA = {
+    //     {105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605},
+    //     {104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604},
+    //     {103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603},
+    //     {102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602},
+    //     {101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601},
+    //     {100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600},
     
-        {105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605},
-        {104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604},
-        {103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603},
-        {102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602},
-        {101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601},
-        {100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600}
-    };
+    //     {105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605},
+    //     {104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604},
+    //     {103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603},
+    //     {102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602},
+    //     {101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601},
+    //     {100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600}
+    // };
 
-    // Accessed as KILLER_MOVES[id (not more than 2)][ply (we chose a max of 64 plies)]
-    public int[][] KILLER_MOVES = new int[2][64];
-    // Accessed as HISTORY_MOVES[piece_index][square]
-    public int[][] HISTORY_MOVES = new int[12][64];
-    public int ORIGINAL_DEPTH;
+    // // Accessed as KILLER_MOVES[id (not more than 2)][ply (we chose a max of 64 plies)]
+    // public int[][] KILLER_MOVES = new int[2][64];
+    // // Accessed as HISTORY_MOVES[piece_index][square]
+    // public int[][] HISTORY_MOVES = new int[12][64];
+    // public int ORIGINAL_DEPTH;
 
-    /*
-     *  ################################################
-        ##                                            ##
-        ##           Principal variation              ##
-        ##                                            ##
-        ################################################
+    // /*
+    //  *  ################################################
+    //     ##                                            ##
+    //     ##           Principal variation              ##
+    //     ##                                            ##
+    //     ################################################
 
-      ================================
-            Triangular PV table
-      --------------------------------
-        PV line: e2e4 e7e5 g1f3 b8c6
-      ================================
+    //   ================================
+    //         Triangular PV table
+    //   --------------------------------
+    //     PV line: e2e4 e7e5 g1f3 b8c6
+    //   ================================
 
-           0    1    2    3    4    5
+    //        0    1    2    3    4    5
       
-      0    m1   m2   m3   m4   m5   m6
+    //   0    m1   m2   m3   m4   m5   m6
       
-      1    0    m2   m3   m4   m5   m6 
+    //   1    0    m2   m3   m4   m5   m6 
       
-      2    0    0    m3   m4   m5   m6
+    //   2    0    0    m3   m4   m5   m6
       
-      3    0    0    0    m4   m5   m6
+    //   3    0    0    0    m4   m5   m6
        
-      4    0    0    0    0    m5   m6
+    //   4    0    0    0    0    m5   m6
       
-      5    0    0    0    0    0    m6
+    //   5    0    0    0    0    0    m6
 
-     */
+    //  */
 
-    public int[] PV_LENGTH = new int[MAX_PLY];
-    public int[][] PV_TABLE = new int[MAX_PLY][MAX_PLY];
+    // public int[] PV_LENGTH = new int[MAX_PLY];
+    // public int[][] PV_TABLE = new int[MAX_PLY][MAX_PLY];
 
-    // For PV scoring
-    public boolean FOLLOW_PV = false;
-    public boolean SCORE_PV = false;
+    // // For PV scoring
+    // public boolean FOLLOW_PV = false;
+    // public boolean SCORE_PV = false;
 
     /*
      *  ################################################
