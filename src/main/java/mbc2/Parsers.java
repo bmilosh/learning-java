@@ -146,6 +146,17 @@ public class Parsers {
     }
 
     public void parseGo(String command) {
+        // Start by resetting all relevant UCI time control variables
+        this.config.UCI_QUIT = false;
+        this.config.UCI_MOVES_TO_GO = 30;
+        this.config.UCI_MOVE_TIME = -1;
+        this.config.UCI_TIME = -1;
+        this.config.UCI_INCREMENT_TIME = 0;
+        this.config.UCI_START_TIME = 0;
+        this.config.UCI_STOP_TIME = 0;
+        this.config.UCI_TIME_IS_SET = false;
+        this.config.UCI_STOPPED = false;
+    
         // Start by splitting the entered command
         String[] commandList = command.split(" ");
 
@@ -163,14 +174,79 @@ public class Parsers {
                 } catch (Exception e) {
                     depth = 6;
                 }
+                pointer += 2;
+                System.out.println("Command is: depth");
             }
             // else depth = 6;
-            pointer++;
+
+            else if (cmnd.equals("infinite")) {
+                // Nothing to do here since our default
+                // flag for this (UCI_time_is_set) is already set to false
+                pointer += 2;
+                System.out.println("Command is: infinite");
+            }
+            else if ((cmnd.equals("binc") && this.config.SIDE_TO_MOVE == 'b') || 
+                (cmnd.equals("winc") && config.SIDE_TO_MOVE == 'w')) {
+                    this.config.UCI_INCREMENT_TIME = Integer.parseInt(commandList[pointer + 1]);
+                    pointer += 2;
+                    System.out.println("Command is: " + cmnd);
+                }
+
+            else if ((cmnd.equals("btime") && this.config.SIDE_TO_MOVE == 'b') || 
+                (cmnd.equals("wtime") && config.SIDE_TO_MOVE == 'w')) {
+                    this.config.UCI_TIME = Integer.parseInt(commandList[pointer + 1]);
+                    pointer += 2;
+                    System.out.println("Command is: " + cmnd);
+                }
+
+            else if (cmnd.equals("movestogo")) {
+                this.config.UCI_MOVES_TO_GO = Integer.parseInt(commandList[pointer + 1]);
+                pointer += 2;
+                System.out.println("Command is: movestogo");
+            }
+
+            else if (cmnd.equals("movetime")) {
+                this.config.UCI_MOVE_TIME = Integer.parseInt(commandList[pointer + 1]);
+                pointer += 2;
+                System.out.println("Command is: movetime");
+            }
+    
+            else {
+                pointer++;
+                System.out.println("Command is: invalid");
+            }
         }
-        depth = depth < 0 ? 6 : depth;
+
+        if (this.config.UCI_MOVE_TIME != -1) {
+            // Set UCI_Time to be the given move time
+            this.config.UCI_TIME = this.config.UCI_MOVE_TIME;
+            // Set moves_to_go to 1. This'll come in handy when we're tweaking
+            // UCI_time later below. The logic is that if we have a move time specified
+            // then we don't need to worry about how many moves we still have to play
+            // in the game within the time control set, so we just divide by 1
+            this.config.UCI_MOVES_TO_GO = 1;
+        }
+
+        // Init the start time
+        this.config.UCI_START_TIME = TimeUtility.getTimeMs();
+
+        if (this.config.UCI_TIME != -1) {
+            // We're searching with time
+            this.config.UCI_TIME_IS_SET = true;
+            // Tweak the time taking into account moves_to_go
+            this.config.UCI_TIME /= this.config.UCI_MOVES_TO_GO;
+            // A little insurance so we don't go over the time we have: reduce UCI_time by 50 ms
+            this.config.UCI_TIME -= 50;
+            // Now we set the stop time our search function will be working with
+            this.config.UCI_STOP_TIME = this.config.UCI_START_TIME + this.config.UCI_TIME + this.config.UCI_INCREMENT_TIME;
+        }
+
+
+        depth = depth < 0 ? 64 : depth;
         System.out.println("depth is: " + depth);
         // Search the position
         Evaluator evaluator = new Evaluator(this.config, this.moveGen, this.moveUtils);
+        // System.out.println("We're searching");
         evaluator.searchPosition(depth);
     }
 

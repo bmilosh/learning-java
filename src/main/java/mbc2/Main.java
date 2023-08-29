@@ -14,6 +14,7 @@ public class Main {
         // PrintUtils.printBoard(config);
         Evaluator evaluator = new Evaluator(config, MoveGenerator, MoveUtils);
         parsers.parseFEN(Config.TRICKY_POSITION);
+        // parsers.parseFEN("8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1");
 
         // int move = parsers.parseMove("e2a6");
         // MoveUtils.makeMove(move, false);

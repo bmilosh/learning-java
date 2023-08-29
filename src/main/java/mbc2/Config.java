@@ -318,15 +318,15 @@ public class Config {
         ##                                            ##
         ################################################
      */
-    public int UCI_QUIT = 0;                 // exit from engine flag
+    public boolean UCI_QUIT = false;          // exit from engine flag
     public int UCI_MOVES_TO_GO = 30;         // UCI "movestogo" command moves counter
     public int UCI_MOVE_TIME = -1;           // UCI "movetime" command time counter
     public int UCI_TIME = -1;                // UCI "time" command holder (ms)
     public int UCI_INCREMENT_TIME = 0;       // UCI "inc" command's time increment holder
-    public int UCI_START_TIME = 0;           // UCI "starttime" command time holder
-    public int UCI_STOP_TIME = 0;            // UCI "stoptime" command time holder
-    public Boolean UCI_TIME_IS_SET = false;  // variable to flag time control availability
-    public int UCI_STOPPED = 0;              // variable to flag when the time is up
+    public long UCI_START_TIME = 0;           // UCI "starttime" command time holder
+    public long UCI_STOP_TIME = 0;            // UCI "stoptime" command time holder
+    public boolean UCI_TIME_IS_SET = false;  // variable to flag time control availability
+    public boolean UCI_STOPPED = false;      // variable to flag when the time is up
 
     /*
     *  ################################################

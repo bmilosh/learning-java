@@ -1,5 +1,6 @@
 package mbc2;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Evaluator {
@@ -100,17 +101,41 @@ public class Evaluator {
         this.config.LEAF_NODES = 0;
         this.FOLLOW_PV = false;
         this.SCORE_PV = false;
+        this.config.UCI_STOPPED = false;
+
+        // init alpha and beta
+        int alpha = -50000;
+        int beta = 50000;
 
         // Iterative deepening
         int currentDepth = 1;
         while (currentDepth <= depth) {
             // Can remove this later
             // this.config.LEAF_NODES = 0;
-
+            
             // Enable PV following
             this.FOLLOW_PV = true;
+            
+            // System.out.println( " depth: " + currentDepth);
+            int score = negamax(alpha, beta, currentDepth);
 
-            int score = negamax(-50000, 50000, currentDepth);
+            
+            if (this.config.UCI_STOPPED) {
+                // System.out.println("UCI stopped?");
+                break;
+            }
+
+            // we fell outside the window, so try again with a full-width window (and the same depth)
+            if ((score <= alpha) || (score >= beta)) {
+                alpha = -50000;    
+                beta = 50000;      
+                continue;
+            }
+
+            // set up the window for the next iteration
+            alpha = score - 50;
+            beta = score + 50;
+
             System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
 
             // loop over moves in a PV line
@@ -232,6 +257,18 @@ public class Evaluator {
     public int quiescenceSearch(int alpha, int beta) {
         this.config.LEAF_NODES++;
 
+        InputReader inputReader = new InputReader(this.config);
+        UCIComms comms = new UCIComms(inputReader, this.config);
+        if ((this.config.LEAF_NODES % 2047) == 0) {
+            // System.out.println("communicating");
+            try {
+                comms.main(null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
         int evaluation = evaluatePosition();
 
         // fail-hard (beta cutoff)
@@ -310,6 +347,29 @@ public class Evaluator {
         // boolean found_PV = false;
         // init PV length 
         this.PV_LENGTH[this.ply] = this.ply;
+        // System.out.println("in negamax. nodes: " + this.config.LEAF_NODES);
+
+        InputReader inputReader = new InputReader(this.config);
+        UCIComms comms = new UCIComms(inputReader, this.config);
+        // if ((this.config.LEAF_NODES & 2047) == 0) {
+        //     try {
+        //         System.out.println("communicating");
+        //         comms.main(null);
+        //     } catch (IOException e) {
+        //         e.printStackTrace();
+        //     }
+        // }
+
+        if ((this.config.LEAF_NODES % 2047) == 0) {
+            try {
+                // System.out.println("communicating");
+                comms.main(null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+        
 
         if (depth <= 0) {
             return quiescenceSearch(alpha, beta);
@@ -332,6 +392,39 @@ public class Evaluator {
         if (inCheck) depth++;
 
         BoardState boardState = new BoardState(this.config);
+
+        // Null Move Pruning (NMP)
+        if (depth >= 3 && !inCheck && this.ply > 0) {
+            // preserve board state
+            boardState.copyBoardState();
+
+            // Switch side to move so opponent gets a free move
+            // without us doing anything
+            this.config.SIDE_TO_MOVE = Config.SIDES[ownColour ^ 1];
+
+            // Set en passant square to empty
+            this.config.ENPASSANT_SQUARE = "no_square";
+
+            // // increment ply
+            // this.ply++;
+
+            // Do the pruning:
+            // Set up so that we check for a beta cutoff immediately
+            score = -negamax(-beta, -beta + 1, depth - 3);
+
+            // // Decrement ply
+            // this.ply--;
+
+            // Restore board state
+            boardState.restoreBoardState();
+
+            if (this.config.UCI_STOPPED) return 0;
+
+            if (score >= beta) {
+                // fail high
+                return beta;
+            }
+        }
 
         ArrayList<Integer> moveList = this.moveGenerator.generateMoves();
         // score PV before sorting
@@ -456,6 +549,8 @@ public class Evaluator {
 
             // restore board state
             boardState.restoreBoardState();
+
+            if (this.config.UCI_STOPPED) return 0;
 
             // increment movesSearched counter
             movesSearched++;
