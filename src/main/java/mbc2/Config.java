@@ -33,6 +33,21 @@ public class Config {
         ################################################
      */
 
+    // Indexed by piece and then square
+    public static long[][] PIECE_KEYS = new long[12][64];
+
+    // one for each square
+    public static long[] ENPASSANT_KEYS = new long[64];
+
+    // Castling keys
+    public static long[] CASTLING_KEYS = new long[16];
+
+    // Side key. We're keeping a key only for black
+    public static long SIDE_KEY = 0;
+
+    // hash key
+    public long HASH_KEY = 0L;
+
     /*
      *  ################################################
         ##                                            ##

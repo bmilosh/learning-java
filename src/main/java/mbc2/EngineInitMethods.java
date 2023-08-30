@@ -88,6 +88,31 @@ public class EngineInitMethods {
         }
     }
 
+    public static void initHashKeys() {
+        Config config = new Config();
+        config.PSEUDORANDOM_NUMBER_STATE = 1804289383L;
+        
+        // Start with piece keys
+        for (int piece = 0; piece < 12; piece++) {
+            for (int square = 0; square < 64; square++) {
+                Config.PIECE_KEYS[piece][square] = PseudorandomGenerator.generateRandom64bitNumber(config);
+            }
+        }
+
+        // enpassant keys
+        for (int square = 0; square < 64; square++) {
+            Config.ENPASSANT_KEYS[square] = PseudorandomGenerator.generateRandom64bitNumber(config);
+        }
+
+        // castling keys
+        for (int num = 0; num < 16; num++) {
+            Config.CASTLING_KEYS[num] = PseudorandomGenerator.generateRandom64bitNumber(config);
+        }
+
+        // side key
+        Config.SIDE_KEY = PseudorandomGenerator.generateRandom64bitNumber(config);
+    }
+
     public static void initAll() {
         initBoardSquares();
         initPieces();
@@ -97,6 +122,7 @@ public class EngineInitMethods {
         initSliderPiecesAttacks(true);
         initSliderPiecesAttacks(false);
         initPawnMovesMask();
+        initHashKeys();
     }
 
 }

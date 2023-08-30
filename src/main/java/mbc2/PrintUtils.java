@@ -76,6 +76,7 @@ public class PrintUtils {
         System.out.printf("        Side to move: %s\n", stm);
         System.out.printf("        Enpassant square: %s\n", enPString);
         System.out.printf("        Castling rights: %s%s%s%s\n", K, Q, k, q);
+        System.out.printf("        Hash key: 0x%s\n", Long.toHexString(config.HASH_KEY));
         System.out.println();
     }
 }

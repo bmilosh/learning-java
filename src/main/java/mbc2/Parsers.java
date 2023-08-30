@@ -98,9 +98,10 @@ public class Parsers {
                     (this.config.CASTLING_RIGHT != 0 && (this.config.CASTLING_RIGHT & Config.CASTLING.get(right)) == 0))) {
                         this.config.CASTLING_RIGHT |= Config.CASTLING.get(right);
                 }
+                else if (right == '-') continue;
                 else {
                     boardState.restoreBoardState();
-                    throw new IllegalArgumentException(String.format("!!!!! INVALID FEN STRING. CASTLING-RIGHTS REPRESENTATION IS INCORRECT: %S !!!!!\n", castlingRights));
+                    throw new IllegalArgumentException(String.format("!!!!! INVALID FEN STRING. CASTLING-RIGHTS REPRESENTATION IS INCORRECT: %s !!!!!\n", castlingRights));
                     // return;
                 }
 
@@ -142,6 +143,9 @@ public class Parsers {
                 throw new IllegalArgumentException(String.format("!!!!! INVALID MOVE COUNT REPRESENTATION IN FEN STRING: %s !!!!!\n", FENToList[FENToList.length - 1] + " and/or " + FENToList[4]));
                 // return;
             }
+
+        ZobristHashing zbh = new ZobristHashing(this.config);
+        this.config.HASH_KEY = zbh.generateHashKey();
 
     }
 
