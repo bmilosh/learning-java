@@ -16,6 +16,7 @@ public class BoardState {
     private char SIDE_TO_MOVE_COPY;
     private int CASTLING_RIGHT_COPY;
     private String ENPASSANT_SQUARE_COPY;
+    private long HASH_KEY_COPY;
     private Config Config;
 
     public BoardState(Config Config) {
@@ -28,6 +29,7 @@ public class BoardState {
         this.SIDE_TO_MOVE_COPY = this.Config.SIDE_TO_MOVE;
         this.CASTLING_RIGHT_COPY = this.Config.CASTLING_RIGHT;
         this.ENPASSANT_SQUARE_COPY = this.Config.ENPASSANT_SQUARE;
+        this.HASH_KEY_COPY = this.Config.HASH_KEY;
     }
 
     public void restoreBoardState() {
@@ -36,5 +38,6 @@ public class BoardState {
         this.Config.SIDE_TO_MOVE = this.SIDE_TO_MOVE_COPY;
         this.Config.CASTLING_RIGHT = this.CASTLING_RIGHT_COPY;
         this.Config.ENPASSANT_SQUARE = this.ENPASSANT_SQUARE_COPY;
+        this.Config.HASH_KEY = this.HASH_KEY_COPY;
     }
 }

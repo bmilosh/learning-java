@@ -61,6 +61,10 @@ public class MoveUtils {
             int enPassant = MoveCoder.getEnPassantFlag(move);
             int castling = MoveCoder.getCastlingFlag(move);
 
+            // hash piece: XOR (piece, source) and (piece, target) into hash key
+            this.config.HASH_KEY ^= Config.PIECE_KEYS[piece][source];
+            this.config.HASH_KEY ^= Config.PIECE_KEYS[piece][target];
+
             // Update moving piece bitboard
             this.config.PIECE_BITBOARDS[piece] = BitBoard.popBitAtIndex(
                 BitBoard.setBitAtIndex(this.config.PIECE_BITBOARDS[piece], target), source
@@ -77,10 +81,16 @@ public class MoveUtils {
                 this.config.PIECE_BITBOARDS[piece] = BitBoard.popBitAtIndex(
                     this.config.PIECE_BITBOARDS[piece], target
                 );
+                // update hash key: remove pawn
+                this.config.HASH_KEY ^= Config.PIECE_KEYS[piece][target];
+                
                 // Now, set the piece we're promoting to
                 this.config.PIECE_BITBOARDS[promotedPiece] = BitBoard.setBitAtIndex(
                     this.config.PIECE_BITBOARDS[promotedPiece], target
                 );
+                // Update hash key: add promoted piece
+                this.config.HASH_KEY ^= Config.PIECE_KEYS[promotedPiece][target];
+
             }
 
             // Handle capture
@@ -97,6 +107,8 @@ public class MoveUtils {
                         this.config.OCCUPANCIES[ownColour ^ 1] = BitBoard.popBitAtIndex(
                             this.config.OCCUPANCIES[ownColour ^ 1], target
                         );
+                        // update hash key: XOR (captured_piece, target) into hash key
+                        this.config.HASH_KEY ^= Config.PIECE_KEYS[capturedPiece][target];
                         break;
                     }
                 }
@@ -118,12 +130,19 @@ public class MoveUtils {
                     target + currentRookPosOffset
                 );
 
+                // update hash key: XOR (rook, source_square) and (rook, target_square) into hash key
+                this.config.HASH_KEY ^= Config.PIECE_KEYS[rook][target + currentRookPosOffset];
+                this.config.HASH_KEY ^= Config.PIECE_KEYS[rook][target - newRookPosOffset];
+
                 // Update occupancies taking into account the rook movement
                 this.config.OCCUPANCIES[ownColour] = BitBoard.popBitAtIndex(
                     BitBoard.setBitAtIndex(this.config.OCCUPANCIES[ownColour], target - newRookPosOffset), 
                     target + currentRookPosOffset
                 );
             }
+
+            // reset castling right in hash_key
+            this.config.HASH_KEY ^= Config.CASTLING_KEYS[this.config.CASTLING_RIGHT];
             /*
              *  # We update castling right after every move.
                 # Castling right only changes if at least one of
@@ -131,6 +150,8 @@ public class MoveUtils {
                 # starting square.
              */
             this.config.CASTLING_RIGHT &= Config.CASTLING_RIGHT_LOOKUP_TABLE[source] & Config.CASTLING_RIGHT_LOOKUP_TABLE[target];
+            // now update hash_key with new castling right
+            this.config.HASH_KEY ^= Config.CASTLING_KEYS[this.config.CASTLING_RIGHT];
 
             // Handle en passant capture
             if (enPassant != 0) {
@@ -141,6 +162,8 @@ public class MoveUtils {
                 this.config.PIECE_BITBOARDS[captureOffset] = BitBoard.popBitAtIndex(
                     this.config.PIECE_BITBOARDS[captureOffset], target + doublePPOffset
                 );
+                // update hash key with en passant capture:
+                this.config.HASH_KEY ^= Config.PIECE_KEYS[captureOffset][target + doublePPOffset];
                 /*
                  * Update occupancies for the other side taking
                  * into account the en passant capture
@@ -148,6 +171,11 @@ public class MoveUtils {
                 this.config.OCCUPANCIES[ownColour ^ 1] = BitBoard.popBitAtIndex(
                     this.config.OCCUPANCIES[ownColour ^ 1], target + doublePPOffset
                 );
+            }
+
+            // hash enpassant square (if available)
+            if (!this.config.ENPASSANT_SQUARE.equals("no_square")) {
+                this.config.HASH_KEY ^= Config.ENPASSANT_KEYS[Config.BOARDSQUARES.get(this.config.ENPASSANT_SQUARE)];
             }
             /*
              *  # As long as we're not making a double pawn push,
@@ -162,6 +190,9 @@ public class MoveUtils {
             if (doublePP != 0) {
                 // We set the en passant square
                 this.config.ENPASSANT_SQUARE = Config.SQUARES[target + doublePPOffset];
+
+                // update hash key with en passant square
+                this.config.HASH_KEY ^= Config.ENPASSANT_KEYS[target + doublePPOffset];
             }
 
             // We update the occupancy for both sides
@@ -169,6 +200,8 @@ public class MoveUtils {
 
             // Update side to move
             this.config.SIDE_TO_MOVE = Config.SIDES[ownColour ^ 1];
+
+            this.config.HASH_KEY ^= Config.SIDE_KEY;
 
             // Check if the move just registered leaves the king in check
             long kingBitboard = this.config.PIECE_BITBOARDS[Config.PIECES.get(king)];
