@@ -48,6 +48,19 @@ public class Config {
     // hash key
     public long HASH_KEY = 0L;
 
+    // hash flags
+    public static int HASH_EXACT_FLAG = 0;
+    public static int HASH_ALPHA_FLAG = 1;
+    public static int HASH_BETA_FLAG = 2;
+    public static String[] HASH_FLAGS = {"EXACT", "ALPHA", "BETA"};
+
+    // hash_table size
+    public static int HASH_TABLE_SIZE = 0x4000000;
+    // public static int HASH_TABLE_SIZE = 0x400000;
+
+    // Initialise transposition table
+    public TranspositionTable HASH_TABLE = new TranspositionTable(HASH_TABLE_SIZE);
+
     /*
      *  ################################################
         ##                                            ##
