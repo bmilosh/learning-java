@@ -29,10 +29,10 @@ public class UCILoop {
         Parsers parsers = new Parsers(config, boardState, moveGenerator, moveUtils);
         Evaluator evaluator = new Evaluator(config, moveGenerator, moveUtils);
 
-        run(parsers, evaluator);
+        run(parsers, evaluator, config);
     }
 
-    public static void run(Parsers parsers, Evaluator evaluator) {
+    public static void run(Parsers parsers, Evaluator evaluator, Config config) {
         // init scanner
         Scanner uciScanner = new Scanner(System.in);
         // Start the main loop
@@ -53,6 +53,7 @@ public class UCILoop {
                     break;
                 case "ucinewgame":
                     parsers.parsePosition("position startpos");
+                    config.HASH_TABLE.clear();
                     break;
                 case "uci":
                     System.out.println(ENGINE_INFO);

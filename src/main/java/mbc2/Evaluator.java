@@ -75,7 +75,7 @@ public class Evaluator {
      */
 
     private int[] PV_LENGTH = new int[Config.MAX_PLY];
-    private int[][] PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
+    public int[][] PV_TABLE = new int[Config.MAX_PLY][Config.MAX_PLY];
 
     // For PV scoring
     private boolean FOLLOW_PV = false;
@@ -104,8 +104,11 @@ public class Evaluator {
         this.config.UCI_STOPPED = false;
 
         // init alpha and beta
-        int alpha = -50000;
-        int beta = 50000;
+        int alpha = -Config.INFINITY;
+        int beta = Config.INFINITY;
+
+        // // clear hash table
+        // config.HASH_TABLE.clear();
 
         // Iterative deepening
         int currentDepth = 1;
@@ -127,8 +130,9 @@ public class Evaluator {
 
             // we fell outside the window, so try again with a full-width window (and the same depth)
             if ((score <= alpha) || (score >= beta)) {
-                alpha = -50000;    
-                beta = 50000;      
+                alpha = -Config.INFINITY;    
+                beta = Config.INFINITY;      
+                // currentDepth--;   // used later?
                 continue;
             }
 
@@ -255,7 +259,6 @@ public class Evaluator {
     }
 
     public int quiescenceSearch(int alpha, int beta) {
-        this.config.LEAF_NODES++;
 
         InputReader inputReader = new InputReader(this.config);
         UCIComms comms = new UCIComms(inputReader, this.config);
@@ -268,9 +271,15 @@ public class Evaluator {
             }
         }
 
+        this.config.LEAF_NODES++;
 
         int evaluation = evaluatePosition();
 
+        // we are too deep, hence there's an overflow of arrays relying on max ply constant
+        if (ply >= Config.MAX_PLY) {
+            return evaluation;
+        }
+        
         // fail-hard (beta cutoff)
         if (evaluation >= beta) {
             return beta;
@@ -301,6 +310,8 @@ public class Evaluator {
 
             // restore board state
             boardState.restoreBoardState();
+
+            if (config.UCI_STOPPED) return 0;
 
             // fail-hard beta cutoff
             if (score >= beta) {
@@ -343,33 +354,34 @@ public class Evaluator {
     }
 
     public int negamax(int alpha, int beta, int depth) {
-        // // init found_PV flag
-        // boolean found_PV = false;
-        // init PV length 
-        this.PV_LENGTH[this.ply] = this.ply;
-        // System.out.println("in negamax. nodes: " + this.config.LEAF_NODES);
+        // First define hash_flag (set to alpha)
+        int hashFlag = Config.HASH_ALPHA_FLAG;
+        // get the hash key for the current position
+        long hashKey = this.config.HASH_KEY;
+
+        int value = config.HASH_TABLE.retrieveEntry(alpha, beta, depth, hashKey, this.ply);
+
+        if (ply > 0 && value != Config.NO_HASH_ENTRY) {
+            // if the move has already been searched (hence has a value)
+            // we just return the score for this move without searching it
+            return value;
+        }
+
+        int score = 0;
 
         InputReader inputReader = new InputReader(this.config);
         UCIComms comms = new UCIComms(inputReader, this.config);
-        // if ((this.config.LEAF_NODES & 2047) == 0) {
-        //     try {
-        //         System.out.println("communicating");
-        //         comms.main(null);
-        //     } catch (IOException e) {
-        //         e.printStackTrace();
-        //     }
-        // }
 
         if ((this.config.LEAF_NODES % 2047) == 0) {
             try {
-                // System.out.println("communicating");
                 comms.main(null);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         }
-        
+
+        // init PV length 
+        this.PV_LENGTH[this.ply] = this.ply;
 
         if (depth <= 0) {
             return quiescenceSearch(alpha, beta);
@@ -380,16 +392,14 @@ public class Evaluator {
 
         this.config.LEAF_NODES++;
 
-        int score = 0;
-        int legalMoves = 0;
-        int movesSearched = 0;
-
         int ownColour = Config.COLOURS.get(this.config.SIDE_TO_MOVE);
         boolean inCheck = this.moveUtils.isKingUnderCheck(
                     BitBoard.getLSBIndex(this.config.PIECE_BITBOARDS[Config.PIECES.get('K') + (6 * ownColour)]), 
                     ownColour ^ 1
         );
         if (inCheck) depth++;
+
+        int legalMoves = 0;
 
         BoardState boardState = new BoardState(this.config);
 
@@ -398,22 +408,30 @@ public class Evaluator {
             // preserve board state
             boardState.copyBoardState();
 
+            // increment ply
+            this.ply++;
+
+            // Just like in make_move, we hash en passant square if available
+            if (!this.config.ENPASSANT_SQUARE.equals("no_square")) {
+                this.config.HASH_KEY ^= Config.ENPASSANT_KEYS[Config.BOARDSQUARES.get(this.config.ENPASSANT_SQUARE)];
+            }
+
+            // Set en passant to empty
+            this.config.ENPASSANT_SQUARE = "no_square";
+
             // Switch side to move so opponent gets a free move
             // without us doing anything
             this.config.SIDE_TO_MOVE = Config.SIDES[ownColour ^ 1];
 
-            // Set en passant square to empty
-            this.config.ENPASSANT_SQUARE = "no_square";
-
-            // // increment ply
-            // this.ply++;
+            // hash side
+            this.config.HASH_KEY ^= Config.SIDE_KEY;
 
             // Do the pruning:
             // Set up so that we check for a beta cutoff immediately
             score = -negamax(-beta, -beta + 1, depth - 3);
 
-            // // Decrement ply
-            // this.ply--;
+            // Decrement ply
+            this.ply--;
 
             // Restore board state
             boardState.restoreBoardState();
@@ -434,6 +452,8 @@ public class Evaluator {
         }
         int[] moveList1 = sortMoves(moveList);
 
+        int movesSearched = 0;
+
         for (int move : moveList1) {
             // preserve current board state
             boardState.copyBoardState();
@@ -446,13 +466,6 @@ public class Evaluator {
             }
 
             legalMoves++;
-
-            /*
-             * TESTING PURPOSES START!!!!!!!!!
-             */
-            /*
-             * TESTING PURPOSES END!!!!!!!!!
-             */
 
             // Full search
             if (movesSearched == 0) {
@@ -555,19 +568,24 @@ public class Evaluator {
             // increment movesSearched counter
             movesSearched++;
 
-            // fail-hard beta cutoff
-            if (score >= beta) {
-                // on quiet moves
-                if (MoveCoder.getCaptureFlag(move) == 0) {
-                    // store killer moves
-                    this.KILLER_MOVES[1][this.ply] = this.KILLER_MOVES[0][this.ply];
-                    this.KILLER_MOVES[0][this.ply] = move;
-                }
-                // node (move) fails high
-                return beta;
-            }
+            // // fail-hard beta cutoff
+            // if (score >= beta) {
+            //     // store hash entry with the score equal to beta
+            //     config.HASH_TABLE.storeEntry(hashKey, depth, score, Config.HASH_BETA_FLAG);
+            //     // on quiet moves
+            //     if (MoveCoder.getCaptureFlag(move) == 0) {
+            //         // store killer moves
+            //         this.KILLER_MOVES[1][this.ply] = this.KILLER_MOVES[0][this.ply];
+            //         this.KILLER_MOVES[0][this.ply] = move;
+            //     }
+            //     // node (move) fails high
+            //     return beta;
+            // }
             // better move
             if (score > alpha) {
+                // switch hash flag from storing score for fail-low node
+                // to the one storing score for PV node
+                hashFlag = Config.HASH_EXACT_FLAG;
                 if (MoveCoder.getCaptureFlag(move) == 0) {
                     // store history move
                     this.HISTORY_MOVES[MoveCoder.getMovingPiece(move)][MoveCoder.getTargetSquare(move)] += depth;
@@ -588,14 +606,31 @@ public class Evaluator {
                 }
                 // adjust PV length
                 this.PV_LENGTH[this.ply] = this.PV_LENGTH[this.ply + 1];
+
+                // fail-hard beta cutoff
+                if (score >= beta) {
+                    // store hash entry with the score equal to beta
+                    config.HASH_TABLE.storeEntry(hashKey, depth, score, Config.HASH_BETA_FLAG);
+                    // on quiet moves
+                    if (MoveCoder.getCaptureFlag(move) == 0) {
+                        // store killer moves
+                        this.KILLER_MOVES[1][this.ply] = this.KILLER_MOVES[0][this.ply];
+                        this.KILLER_MOVES[0][this.ply] = move;
+                    }
+                    // node (move) fails high
+                    return beta;
+                }
             }
         }
         if (legalMoves == 0) {
             // if in check, return mating score (assuming closest distance to mating position)
-            if (inCheck) return -49000 + this.ply;
+            if (inCheck) return -Config.MATE_VALUE + this.ply;
             // else return stalemate score
             else return 0;
         }
+
+        // store hash entry with the score equal to alpha
+        config.HASH_TABLE.storeEntry(hashKey, depth, score, hashFlag);
 
         // node (move) fails low
         return alpha;

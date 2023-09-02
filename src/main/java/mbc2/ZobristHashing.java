@@ -14,7 +14,6 @@ public class ZobristHashing {
         long bitboard;
         for (int num = 0; num < 12; num++) {
             bitboard = this.config.PIECE_BITBOARDS[num];
-            // PrintUtils.printBitBoard(bitboard);
             while (bitboard != 0) {
                 int square = BitBoard.getLSBIndex(bitboard);
                 bitboard &= ~Long.lowestOneBit(bitboard);

@@ -88,8 +88,8 @@ public class EngineInitMethods {
         }
     }
 
-    public static void initHashKeys() {
-        Config config = new Config();
+    public static void initHashKeys(Config config) {
+        
         config.PSEUDORANDOM_NUMBER_STATE = 1804289383L;
         
         // Start with piece keys
@@ -122,7 +122,11 @@ public class EngineInitMethods {
         initSliderPiecesAttacks(true);
         initSliderPiecesAttacks(false);
         initPawnMovesMask();
-        initHashKeys();
+        
+        Config config = new Config();
+        initHashKeys(config);
+        // clear transposition table
+        config.HASH_TABLE.clear();
     }
 
 }

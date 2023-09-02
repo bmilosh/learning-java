@@ -53,10 +53,10 @@ public class Config {
     public static int HASH_ALPHA_FLAG = 1;
     public static int HASH_BETA_FLAG = 2;
     public static String[] HASH_FLAGS = {"EXACT", "ALPHA", "BETA"};
+    public static int NO_HASH_ENTRY = 100000;
 
     // hash_table size
-    public static int HASH_TABLE_SIZE = 0x4000000;
-    // public static int HASH_TABLE_SIZE = 0x400000;
+    public static int HASH_TABLE_SIZE = 0x400000;
 
     // Initialise transposition table
     public TranspositionTable HASH_TABLE = new TranspositionTable(HASH_TABLE_SIZE);
@@ -146,6 +146,9 @@ public class Config {
     public int MOVE_COUNT = 0;
     public long BEST_MOVE = 0;
     public int LEAF_NODES = 0;
+    public static int INFINITY = 50000;
+    public static int MATE_SCORE = 48000;
+    public static int MATE_VALUE = 49000;
 
     /*
      *  ################################################
