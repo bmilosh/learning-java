@@ -115,7 +115,7 @@ public class Evaluator {
         while (currentDepth <= depth) {
             // Can remove this later
             // this.config.LEAF_NODES = 0;
-            System.out.println("Checking depth: " + currentDepth + ". Full depth is " + depth);
+            // System.out.println("Checking depth: " + currentDepth + ". Full depth is " + depth);
             
             // Enable PV following
             this.FOLLOW_PV = true;
