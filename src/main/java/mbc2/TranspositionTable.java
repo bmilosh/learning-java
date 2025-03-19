@@ -7,8 +7,11 @@ public class TranspositionTable {
         hashTable = new TTEntry[size];
     }
 
-    public void storeEntry(long hashKey, int depth, int score, int flag) {
+    public void storeEntry(long hashKey, int depth, int score, int flag, int ply) {
         int index = (int) hashKey % Config.HASH_TABLE_SIZE;
+        // update score if necessary
+        if (score < -Config.MATE_SCORE) score -= ply;
+        else if (score > Config.MATE_SCORE) score += ply;
         index = (index < 0) ? Config.HASH_TABLE_SIZE + index : index;
         hashTable[index] = new TTEntry(hashKey, depth, flag, score);
     }

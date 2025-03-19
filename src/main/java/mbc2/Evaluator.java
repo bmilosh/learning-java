@@ -115,6 +115,7 @@ public class Evaluator {
         while (currentDepth <= depth) {
             // Can remove this later
             // this.config.LEAF_NODES = 0;
+            System.out.println("Checking depth: " + currentDepth + ". Full depth is " + depth);
             
             // Enable PV following
             this.FOLLOW_PV = true;
@@ -140,7 +141,20 @@ public class Evaluator {
             alpha = score - 50;
             beta = score + 50;
 
-            System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
+            if (score > -Config.MATE_VALUE && score < -Config.MATE_SCORE)
+                // printf("info score mate %d depth %d nodes %ld time %d pv ", -(score + mate_value) / 2 - 1, current_depth, nodes, get_time_ms() - starttime);
+                System.out.printf("info score mate %d depth %d nodes %d pv ", -(score + Config.MATE_VALUE) / 2 - 1, currentDepth, this.config.LEAF_NODES);
+        
+            else if (score > Config.MATE_SCORE && score < Config.MATE_VALUE)
+                // printf("info score mate %d depth %d nodes %ld time %d pv ", (mate_value - score) / 2 + 1, current_depth, nodes, get_time_ms() - starttime);  
+                System.out.printf("info score mate %d depth %d nodes %d pv ", (Config.MATE_VALUE - score) / 2 + 1, currentDepth, this.config.LEAF_NODES); 
+            
+            else
+                // printf("info score cp %d depth %d nodes %ld time %d pv ", score, current_depth, nodes, get_time_ms() - starttime);
+                System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
+
+
+            // System.out.printf("info score cp %d depth %d nodes %d pv ", score, currentDepth, this.config.LEAF_NODES);
 
             // loop over moves in a PV line
             for (int num = 0; num < this.PV_LENGTH[0]; num++) {
@@ -361,7 +375,15 @@ public class Evaluator {
 
         int value = config.HASH_TABLE.retrieveEntry(alpha, beta, depth, hashKey, this.ply);
 
-        if (ply > 0 && value != Config.NO_HASH_ENTRY) {
+        /*
+        This ought to reduce the number of nodes being checked (only starts
+        to catch from depth 8 though). However, it doesn't seem to do so at
+        the moment, most likely due to a bug in the implementation of the
+        transposition table.
+        */
+        // boolean isPVNode = beta - alpha > 1;
+
+        if (ply > 0 && value != Config.NO_HASH_ENTRY ) {  // && !isPVNode
             // if the move has already been searched (hence has a value)
             // we just return the score for this move without searching it
             return value;
@@ -610,7 +632,7 @@ public class Evaluator {
                 // fail-hard beta cutoff
                 if (score >= beta) {
                     // store hash entry with the score equal to beta
-                    config.HASH_TABLE.storeEntry(hashKey, depth, score, Config.HASH_BETA_FLAG);
+                    config.HASH_TABLE.storeEntry(hashKey, depth, score, Config.HASH_BETA_FLAG, ply);
                     // on quiet moves
                     if (MoveCoder.getCaptureFlag(move) == 0) {
                         // store killer moves
@@ -630,7 +652,7 @@ public class Evaluator {
         }
 
         // store hash entry with the score equal to alpha
-        config.HASH_TABLE.storeEntry(hashKey, depth, score, hashFlag);
+        config.HASH_TABLE.storeEntry(hashKey, depth, score, hashFlag, ply);
 
         // node (move) fails low
         return alpha;

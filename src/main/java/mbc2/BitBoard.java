@@ -23,6 +23,8 @@ public class BitBoard {
 
     public static int getLSBIndex(long bitboard) {
         if (bitboard == 0) return -1;
-        return Long.toBinaryString(bitboard & -bitboard).length() - 1;
+        return Long.numberOfTrailingZeros(bitboard);
+        // Old method
+        // return Long.toBinaryString(bitboard & -bitboard).length() - 1;
     }
 }

@@ -153,28 +153,24 @@ public class AttacksGenerator {
         int targetFile = square % 8;
 
         for (int rank = targetRank + 1; rank <= 7; rank++) {
-            result |= (1L << (rank * 8 + targetFile));
-            if (((1L << (rank * 8 + targetFile)) & bitboard) != 0) {
-                break;
-            }
+            long bit = 1L << (rank * 8 + targetFile);
+            result |= bit;
+            if ((bit & bitboard) != 0) break;
         }
         for (int rank = targetRank - 1; rank >= 0; rank--) {
-            result |= (1L << (rank * 8 + targetFile));
-            if (((1L << (rank * 8 + targetFile)) & bitboard) != 0) {
-                break;
-            }
+            long bit = 1L << (rank * 8 + targetFile);
+            result |= bit;
+            if ((bit & bitboard) != 0) break;
         }
         for (int file = targetFile - 1; file >= 0; file--) {
-            result |= (1L << (targetRank * 8 + file));
-            if (((1L << (targetRank * 8 + file)) & bitboard) != 0) {
-                break;
-            }
+            long bit = 1L << (targetRank * 8 + file);
+            result |= bit;
+            if ((bit & bitboard) != 0) break;
         }
         for (int file = targetFile + 1; file <= 7; file++) {
-            result |= (1L << (targetRank * 8 + file));
-            if (((1L << (targetRank * 8 + file)) & bitboard) != 0) {
-                break;
-            }
+            long bit = 1L << (targetRank * 8 + file);
+            result |= bit;
+            if ((bit & bitboard) != 0) break;
         }
 
         return result;
@@ -206,13 +202,18 @@ public class AttacksGenerator {
     }
 
     public static long getRookAttacks(int square, long occupancy) {
-        occupancy &= ROOK_MASKS[square];
-        occupancy *= ROOK_MAGIC_NUMBERS[square];
-        occupancy &= 0xFFFFFFFFFFFFFFFFL;
-        occupancy >>= 64 - ROOK_RELEVANCY_OCC_COUNT[square];
-        occupancy = (int) occupancy < 0 ? 4096 + occupancy : occupancy;
-    
-        return ROOK_ATTACKS[square][(int)occupancy];
+        // occupancy &= ROOK_MASKS[square];
+        // occupancy *= ROOK_MAGIC_NUMBERS[square];
+        // occupancy &= 0xFFFFFFFFFFFFFFFFL;
+        // occupancy >>= 64 - ROOK_RELEVANCY_OCC_COUNT[square];
+        // occupancy = (int) occupancy < 0 ? 4096 + occupancy : occupancy;
+        int shift = 64 - ROOK_RELEVANCY_OCC_COUNT[square];
+        long maskedOccupancy = (occupancy & ROOK_MASKS[square]) * ROOK_MAGIC_NUMBERS[square] & 0xFFFFFFFFFFFFFFFFL;
+        long shiftedOccupancy = maskedOccupancy >> shift;
+        int adjustedIndex = (int) shiftedOccupancy < 0 ? 4096 + (int) shiftedOccupancy : (int) shiftedOccupancy;
+
+        // return ROOK_ATTACKS[square][(int)occupancy];
+        return ROOK_ATTACKS[square][adjustedIndex];
     }
 
     public static long getBishopAttacks(int square, long occupancy) {

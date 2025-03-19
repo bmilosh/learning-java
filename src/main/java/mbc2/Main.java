@@ -32,6 +32,13 @@ public class Main {
         // // System.out.println("Time taken: " + (TimeUtility.getTimeMs() - s) + " ms");
         // // perft.perftTest(3);
 
+        // long n = 1L << 63;
+        // long nrl = n >> 8; // returns a negative number; not what we want
+        // long nrr = n >>> 8; 
+        // System.out.println(n);
+        // System.out.println(nrl);
+        // System.out.println(nrr);
+
     }
 
 }

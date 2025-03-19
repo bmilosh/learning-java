@@ -47,6 +47,7 @@ public class UCILoop {
                     break;
                 case "position":
                     parsers.parsePosition(command);
+                    config.HASH_TABLE.clear();
                     break;
                 case "go":
                     parsers.parseGo(command);
